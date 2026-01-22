@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Futuristic Nodes with Reflection</title>
+    <style>
+        body { margin: 0; background-color: #020408; overflow: hidden; cursor: crosshair; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { Reflector } from 'three/addons/objects/Reflector.js';
+
+        // --- Scene & Camera ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x020408, 5, 25);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 10);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // --- Reflective Ground ---
+        const groundGeo = new THREE.PlaneGeometry(50, 50);
+        const groundMirror = new Reflector(groundGeo, {
+            clipBias: 0.003,
+            textureWidth: window.innerWidth * window.devicePixelRatio,
+            textureHeight: window.innerHeight * window.devicePixelRatio,
+            color: 0x111111
+        });
+        groundMirror.rotateX(-Math.PI / 2);
+        groundMirror.position.y = -2;
+        scene.add(groundMirror);
+
+        // --- Materials ---
+        const glassBaseColor = new THREE.Color(0x112233);
+        const highlightColor = new THREE.Color(0x9d00ff); // Purplish
+
+        const glassMaterial = new THREE.MeshPhysicalMaterial({
+            color: glassBaseColor,
+            metalness: 0.2,
+            roughness: 0.1,
+            transmission: 0.7,
+            thickness: 1,
+            transparent: true,
+            opacity: 0.4,
+            emissive: 0x000000,
+            emissiveIntensity: 2
+        });
+
+        // --- Node Logic ---
+        const nodeGroup = new THREE.Group();
+        const nodesArray = [];
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function createNode(x, type) {
+            const group = new THREE.Group();
+            
+            // Outer Shell
+            const shellGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+            const shell = new THREE.Mesh(shellGeo, glassMaterial.clone()); // Unique material per node for hover
+            group.add(shell);
+
+            // Neon Inner
+            let innerGeo;
+            if (type === 'start') innerGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            else if (type === 'gateway') innerGeo = new THREE.OctahedronGeometry(0.5);
+            else innerGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+
+            const neonMat = new THREE.MeshStandardMaterial({
+                color: 0x00f2ff,
+                emissive: 0x00f2ff,
+                emissiveIntensity: 15,
+                wireframe: true
+            });
+            const inner = new THREE.Mesh(innerGeo, neonMat);
+            group.add(inner);
+
+            group.position.x = x;
+            nodeGroup.add(group);
+            nodesArray.push({ group, shell, inner });
+        }
+
+        const types = ['start', 'task', 'task', 'gateway', 'gateway', 'terminal'];
+        types.forEach((t, i) => createNode((i - 2.5) * 2.5, t));
+        scene.add(nodeGroup);
+
+        // --- Interaction ---
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // --- Animation ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Raycasting for Hover
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(nodeGroup.children, true);
+
+            nodesArray.forEach(node => {
+                const isHovered = intersects.length > 0 && intersects.some(i => i.object.parent === node.group);
+                
+                // Animate properties based on hover
+                const targetColor = isHovered ? highlightColor : glassBaseColor;
+                const targetEmissive = isHovered ? highlightColor : new THREE.Color(0x000000);
+                
+                node.shell.material.color.lerp(targetColor, 0.1);
+                node.shell.material.emissive.lerp(targetEmissive, 0.1);
+                node.shell.material.opacity = THREE.MathUtils.lerp(node.shell.material.opacity, isHovered ? 0.8 : 0.4, 0.1);
+                
+                // Movement
+                node.group.rotation.y += 0.01;
+                node.group.position.y = Math.sin(Date.now() * 0.002 + node.group.position.x) * 0.2;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

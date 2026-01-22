@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Futuristic Process Nodes</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #050a10;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+      }
+      #labels {
+        position: absolute;
+        bottom: 20px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        color: #00f2ff;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 12px;
+        letter-spacing: 1px;
+      }
+      .label {
+        width: 120px;
+        text-align: center;
+        margin: 0 10px;
+      }
+      .floating-label {
+        color: #00f2ff;
+        font-family: "Segoe UI", sans-serif;
+        padding: 5px 10px;
+        background: rgba(0, 242, 255, 0.1);
+        border: 1px solid rgba(0, 242, 255, 0.5);
+        border-radius: 4px;
+        font-size: 10px;
+        pointer-events: auto; /* Important for clicking */
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        transition: all 0.2s;
+      }
+      .floating-label:hover {
+        background: rgba(0, 242, 255, 0.3);
+      }
+      /* Modal Styling */
+      #modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        background: rgba(5, 10, 16, 0.9);
+        border: 1px solid #00f2ff;
+        font-family: "Segoe UI", sans-serif;
+        color: white;
+        padding: 20px;
+        display: none;
+        z-index: 100;
+        backdrop-filter: blur(10px);
+        border-radius: 8px;
+      }
+
+      /* Top Left Header */
+      #process-header {
+        position: absolute;
+        top: 30px;
+        left: 30px;
+        color: #00f2ff;
+        font-family: "Segoe UI", sans-serif;
+        z-index: 10;
+      }
+      .header-line {
+        width: 50px;
+        height: 2px;
+        background: #00f2ff;
+        margin-bottom: 10px;
+      }
+      .header-sub {
+        font-size: 10px;
+        letter-spacing: 2px;
+        opacity: 0.7;
+      }
+      .header-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 300;
+        letter-spacing: 1px;
+      }
+
+      /* Right Sidebar */
+      #property-sidebar {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        bottom: 20px;
+        width: 300px;
+        background: rgba(10, 20, 30, 0.6); /* Semi-transparent */
+        backdrop-filter: blur(15px); /* Blurred background */
+        border-left: 1px solid rgba(0, 242, 255, 0.3);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        color: white;
+        font-family: "Segoe UI", sans-serif;
+        z-index: 10;
+        border-radius: 4px 0 0 4px;
+      }
+
+      .sidebar-header {
+        padding: 20px;
+        font-size: 14px;
+        letter-spacing: 2px;
+        border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+        color: #00f2ff;
+      }
+
+      .sidebar-body {
+        padding: 20px;
+        flex-grow: 1;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .action-btn {
+        width: 100%;
+        padding: 12px;
+        background: transparent;
+        border: 1px solid #00f2ff;
+        color: #00f2ff;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+
+      .action-btn:hover {
+        background: rgba(0, 242, 255, 0.2);
+      }
+
+      /* Sidebar hidden state */
+      #property-sidebar.hidden {
+        transform: translateX(110%); /* Slides it out of view */
+      }
+
+      /* Toggle Button Styling */
+      #sidebar-toggle {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 20; /* Above the sidebar */
+        background: rgba(10, 20, 30, 0.8);
+        border: 1px solid #00f2ff;
+        color: #00f2ff;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 10px;
+        backdrop-filter: blur(5px);
+        border-radius: 4px 0 0 4px;
+      }
+
+      /* Ensure the sidebar has a transition property */
+      #property-sidebar {
+        transition: transform 0.3s ease-in-out;
+      }
+
+      #toolbar-left {
+        position: absolute;
+        top: 50%;
+        left: 20px;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 20;
+      }
+
+      .tool-btn {
+        background: rgba(10, 20, 30, 0.8);
+        border: 1px solid rgba(0, 242, 255, 0.5);
+        color: #00f2ff;
+        padding: 4px;
+        cursor: pointer;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 10px;
+        backdrop-filter: blur(5px);
+        transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 60px;
+      }
+
+      .tool-btn.active {
+        background: rgba(0, 242, 255, 0.2);
+        border-color: #00f2ff;
+        box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+      }
+
+      .tool-btn:hover {
+        background: rgba(0, 242, 255, 0.1);
+      }
+
+      .tool-btn .icon {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar-left">
+      <button class="tool-btn active" data-mode="move">
+        <span class="icon">✥</span> MOVE
+      </button>
+      <button class="tool-btn" data-mode="add">
+        <span class="icon">＋</span> ADD
+      </button>
+      <button
+        class="tool-btn"
+        data-mode="delete"
+        style="color: #ff4b4b; border-color: rgba(255, 75, 75, 0.5)"
+      >
+        <span class="icon">✕</span> DEL
+      </button>
+    </div>
+
+    <div id="labels">
+      <div class="label">START</div>
+      <div class="label">USER TASK</div>
+      <div class="label">SERVICE</div>
+      <div class="label">EXCLUSIVE</div>
+      <div class="label">PARALLEL</div>
+      <div class="label">TERMINAL</div>
+    </div>
+
+    <div id="process-header">
+      <div class="header-line"></div>
+      <div class="header-content">
+        <h1 class="header-title">FUTURISTIC PROCESS MAP v1.0</h1>
+        <span class="header-sub">SYSTEM STATUS: ACTIVE</span>
+      </div>
+    </div>
+
+    <div id="property-sidebar">
+      <div class="sidebar-header">NODE PROPERTIES</div>
+      <div class="sidebar-body" id="sidebar-content">
+        <p class="empty-state">Select a node to view detailed properties...</p>
+      </div>
+      <div class="sidebar-footer">
+        <button class="action-btn">EXECUTE NODE</button>
+      </div>
+    </div>
+    <button id="sidebar-toggle">TOGGLE SIDEBAR</button>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { Reflector } from "three/addons/objects/Reflector.js";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import {
+        CSS2DRenderer,
+        CSS2DObject,
+      } from "three/addons/renderers/CSS2DRenderer.js";
+
+      const NODE_SPACING = 5.0; // Increased from 2.5 to 5.0 for sparser layout
+
+      // --- Scene Setup ---
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+
+      document.body.appendChild(renderer.domElement);
+
+      // Label Renderer
+      const labelRenderer = new CSS2DRenderer();
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.domElement.style.position = "absolute";
+      labelRenderer.domElement.style.top = "0px";
+      labelRenderer.domElement.style.pointerEvents = "none"; // Click through to canvas if needed
+      document.body.appendChild(labelRenderer.domElement);
+
+      // Modal container in body
+      const modal = document.createElement("div");
+      modal.id = "modal";
+      modal.innerHTML = `<h3>Node Details</h3><p>Information about this process step...</p><button onclick="this.parentElement.style.display='none'">Close</button>`;
+      document.body.appendChild(modal);
+
+      function createLabel(nodeGroup, text) {
+        const div = document.createElement("div");
+        div.className = "floating-label";
+        div.textContent = text.toUpperCase();
+
+        // Add Click Interaction
+        div.onclick = () => {
+          modal.style.display = "block";
+          modal.querySelector("h3").textContent =
+            text.toUpperCase() + " DETAILS";
+        };
+
+        const label = new CSS2DObject(div);
+        label.position.set(0, 1.5, 0); // Position above the node
+        nodeGroup.add(label);
+      }
+
+      // --- 1. OrbitControls Setup ---
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableRotate = false;
+      // Enable panning (Right-click or two-finger drag)
+      controls.enablePan = true;
+      controls.screenSpacePanning = false; // False forces panning to stay on the XZ plane
+
+      // Optional: If you want left-click to pan instead of right-click
+      controls.mouseButtons = {
+        LEFT: THREE.MOUSE.PAN,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE,
+      };
+      controls.enableDamping = true; // Smooth motion
+      //   controls.screenSpacePanning = true; // Allows vertical/horizontal panning
+      controls.minDistance = 2;
+      controls.maxDistance = 20;
+
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      // Constrain Zoom
+      controls.minDistance = 5;
+      controls.maxDistance = 20;
+
+      // Set the initial camera angle (Bird's eye perspective)
+      camera.position.set(0, 10, 10);
+      camera.lookAt(0, 0, 0);
+
+      // 1. Add Fog to the scene (color should match background)
+      scene.background = new THREE.Color(0x020408);
+      scene.fog = new THREE.Fog(0x020408, 5, 25);
+
+      // --- Lighting ---
+      const ambientLight = new THREE.AmbientLight(0x404040, 2);
+      scene.add(ambientLight);
+
+      const pointLight = new THREE.PointLight(0x00f2ff, 15, 50);
+      pointLight.position.set(5, 5, 5);
+      scene.add(pointLight);
+
+      // --- Materials ---
+      const glassBaseColor = new THREE.Color(0x112233);
+      const highlightColor = new THREE.Color(0x414e5c); // Purplish
+      const glassMaterialOld = new THREE.MeshPhysicalMaterial({
+        color: 0x112233,
+        metalness: 0.1,
+        roughness: 0.05,
+        transmission: 0.95, // Glass transparency
+        thickness: 0.5,
+        ior: 1.5,
+        transparent: true,
+        opacity: 0.6,
+        envMapIntensity: 1,
+      });
+      const glassMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0x000000, // Deep black base
+        metalness: 0.1,
+        roughness: 0.4, // Increased roughness for "frosted" look
+        transmission: 0.5, // Blend of transparency and solid
+        thickness: 1.0, // Gives depth to the glass edges
+        transparent: true,
+        opacity: 0.7, // Matches the semi-transparency in your image
+        envMapIntensity: 1,
+      });
+
+      const neonMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00f2ff,
+        emissive: 0x00f2ff,
+        emissiveIntensity: 10,
+        wireframe: true,
+      });
+
+      //   // 2. Reflective Ground with Grid Helper
+      //   const groundGroup = new THREE.Group();
+      //   const groundGeo = new THREE.PlaneGeometry(50, 50);
+
+      // --- Dark Matte Ground (No Mirror) ---
+      const groundGroup = new THREE.Group();
+      const groundGeo = new THREE.PlaneGeometry(100, 100);
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x020408,
+        roughness: 1,
+        metalness: 0,
+      });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -1.5; // Lowered to give nodes space to breathe
+      groundGroup.add(ground);
+
+      // LOWER RESOLUTION FOR BLURRIER EFFECT
+      //   const TEXTURE_SIZE = 512;
+      //   const isRough = false;
+      //   const groundMirror = new Reflector(groundGeo, {
+      //     clipBias: 0.003,
+      //     textureWidth: isRough
+      //       ? TEXTURE_SIZE
+      //       : window.innerWidth * window.devicePixelRatio,
+      //     textureHeight: isRough
+      //       ? TEXTURE_SIZE
+      //       : window.innerHeight * window.devicePixelRatio,
+      //     color: 0x050505, // Darker reflection color
+      //   });
+      //   groundMirror.rotateX(-Math.PI / 2);
+      //   groundMirror.position.y = -0.75;
+
+      //   // CRITICAL: Force the reflection to be subtle
+      //   groundMirror.material.transparent = true;
+      //   groundMirror.material.opacity = 0.4; // Lower opacity makes the reflection "sink" into the dark background
+      //   groundMirror.material.depthWrite = false; // Prevents the plane from clipping other glow effects
+
+      //   groundGroup.add(groundMirror);
+
+      // 3. The Grid Overlay
+      const grid = new THREE.GridHelper(50, 50, 0x151515, 0x151515);
+      grid.position.y = -0.74; // Slightly above the mirror to avoid flickering
+      grid.material.opacity = 0.25;
+      grid.material.transparent = true;
+      groundGroup.add(grid);
+
+      scene.add(groundGroup);
+
+      // --- Connection System ---
+      const connectionLayer = new THREE.Group();
+      connectionLayer.position.y = -1.49; // Hovering just above ground
+      scene.add(connectionLayer);
+
+      const footprintLayer = new THREE.Group();
+      footprintLayer.position.y = -1.49; // Hovering just above ground
+      scene.add(footprintLayer);
+
+      function drawRoundedConnection(x1, x2) {
+        const offsetZ = 1.2;
+        const radius = 0.5;
+        const ringRadius = 0.75; // The gap to leave for the node footprint
+
+        const path = new THREE.Path();
+        // Start at the edge of the ring
+        path.moveTo(x1, ringRadius);
+        path.lineTo(x1, offsetZ - radius);
+        path.quadraticCurveTo(x1, offsetZ, x1 + radius, offsetZ);
+        path.lineTo(x2 - radius, offsetZ);
+        path.quadraticCurveTo(x2, offsetZ, x2, offsetZ - radius);
+        // End at the edge of the next ring
+        path.lineTo(x2, ringRadius);
+
+        const points = path.getPoints();
+        const geometry = new THREE.BufferGeometry().setFromPoints(
+          points.map((p) => new THREE.Vector3(p.x, 0, p.y))
+        );
+
+        const lineMaterial = new THREE.LineBasicMaterial({
+          color: 0x00f2ff,
+          transparent: true,
+          opacity: 0.3,
+        });
+
+        const line = new THREE.Line(geometry, lineMaterial);
+        // connectionLayer.add(line);
+        return line;
+      }
+
+      function drawConnection(x1, x2) {
+        const y = 0;
+        const radius = 0.4; // Corner roundness
+        const midX = (x1 + x2) / 2;
+        const offsetZ = 1.5; // How far the line bends away
+
+        // Create a path for the orthogonal line
+        const curve = new THREE.CurvePath();
+
+        // Simple L-shape with rounded corners (using Quadratic Bezier for curves)
+        const lineMaterial = new THREE.LineBasicMaterial({
+          color: 0x00f2ff,
+          transparent: true,
+          opacity: 0.3,
+        });
+
+        const points = [];
+        points.push(new THREE.Vector3(x1, 0, 0)); // Start at Node A footprint
+        points.push(new THREE.Vector3(x1, 0, offsetZ)); // Bend out
+        points.push(new THREE.Vector3(x2, 0, offsetZ)); // Move across
+        points.push(new THREE.Vector3(x2, 0, 0)); // Bend back in to Node B
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const line = new THREE.Line(geometry, lineMaterial);
+        // connectionLayer.add(line);
+        return line;
+      }
+
+      function drawFootprint(x) {
+        const geo = new THREE.RingGeometry(0.7, 0.75, 32);
+        const mat = new THREE.MeshBasicMaterial({
+          color: 0x00f2ff,
+          transparent: true,
+          opacity: 0.2,
+          side: THREE.DoubleSide,
+        });
+        const fp = new THREE.Mesh(geo, mat);
+        fp.rotation.x = -Math.PI / 2;
+        fp.position.x = x;
+        footprintLayer.add(fp);
+        footprintArray.push(fp);
+        return fp;
+      }
+
+      // --- Node Logic ---
+      const nodeGroup = new THREE.Group();
+      const nodesArray = [];
+      const footprintArray = [];
+      const connectionsArray = []; // To track dynamic lines
+
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      // --- Node Creation Helper ---
+      function createNode(x, type) {
+        const group = new THREE.Group();
+
+        // Outer Rounded Shell
+        let outerGeo;
+        if (type === "start" || type === "terminal")
+          outerGeo = new THREE.CylinderGeometry(0.75, 0.75, 1.25);
+        // SphereGeometry(0.75, 8, 8);
+        else if (type.endsWith("gateway"))
+          outerGeo = new THREE.CylinderGeometry(0.75, 0.75, 1.25);
+        else outerGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+        const shell = new THREE.Mesh(outerGeo, glassMaterial.clone());
+        group.add(shell);
+
+        // Inner Icon (Represented by different geometries)
+        let innerGeo;
+        if (type === "start") innerGeo = new THREE.SphereGeometry(0.3, 24, 24);
+        else if (type === "task")
+          innerGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        else if (type === "usertask")
+          innerGeo = new THREE.CylinderGeometry(0.15, 0.25, 0.5);
+        else if (type === "xgateway")
+          innerGeo = new THREE.OctahedronGeometry(0.4);
+        else if (type === "pgateway")
+          innerGeo = new THREE.CapsuleGeometry(0.25, 0.25, 0.5, 4, 1);
+        else innerGeo = new THREE.TorusGeometry(0.3, 0.05, 8, 24);
+
+        const innerIcon = new THREE.Mesh(innerGeo, neonMaterial);
+        group.add(innerIcon);
+
+        group.position.x = x;
+        nodeGroup.add(group);
+        nodesArray.push({ group, shell, innerIcon });
+        return group;
+      }
+
+      function createConnection(nodeA, nodeB) {
+        console.log(nodeA.position, nodeB.position);
+        const material = new THREE.LineBasicMaterial({
+          color: 0x00f2ff,
+          transparent: true,
+          opacity: 0.3,
+        });
+        const geometry = new THREE.BufferGeometry();
+        const line = new THREE.Line(geometry, material);
+
+        const connectionObj = { line, nodeA, nodeB };
+        updateConnectionGeometry(connectionObj);
+
+        connectionLayer.add(line);
+        connectionsArray.push(connectionObj);
+        return connectionObj;
+      }
+
+      function ZtoY(p) {
+        return new THREE.Vector2(p.x, p.z);
+      }
+
+      function YtoZ(p) {
+        return new THREE.Vector3(p.x, 0, p.y);
+      }
+
+      function updateConnectionGeometry(conn) {
+        const x1 = ZtoY(conn.nodeA.position);
+        const x2 = ZtoY(conn.nodeB.position);
+
+        const offsetZ = 1.2;
+        const radius = 0.5;
+        const ringRadius = 0.75; // The gap to leave for the node footprint
+
+        const path = new THREE.Path();
+        // Start at the edge of the ring
+        path.moveTo(x1.x, ringRadius);
+        path.lineTo(x1.x, offsetZ - radius);
+        path.quadraticCurveTo(x1.x, offsetZ, x1.x + radius, offsetZ);
+        path.lineTo(x2.x - radius, offsetZ);
+        path.quadraticCurveTo(x2.x, offsetZ, x2.x, offsetZ - radius);
+        // End at the edge of the next ring
+        path.lineTo(x2.x, ringRadius);
+
+        const points = path.getPoints();
+        console.log('updating connection geometry ', x1, x2);
+
+        conn.line.geometry.setFromPoints(points.map(YtoZ));
+      }
+
+      // --- Updated Node Creation Loop ---
+      const types = [
+        "start",
+        "usertask",
+        // "task",
+        // "xgateway",
+        // "pgateway",
+        "terminal",
+      ];
+      const NODE_START = NODE_SPACING / types.length;
+      console.log(NODE_START, NODE_SPACING);
+      var prevNode = null;
+      types.forEach((t, i) => {
+        const xPos = (i - NODE_START) * NODE_SPACING;
+        const node = createNode(xPos, t);
+        drawFootprint(xPos);
+        createLabel(node, t);
+
+        // Connect to the next node
+        if (prevNode != null) {
+          // drawRoundedConnection(xPos, xPos + NODE_SPACING);
+          createConnection(prevNode, node);
+        }
+        prevNode = node;
+      });
+      scene.add(nodeGroup);
+
+      // --- Refined Lighting for Darker Background ---
+      ambientLight.intensity = 0.1; // Much lower
+      pointLight.position.set(0, 10, 5);
+      pointLight.intensity = 30;
+
+      // --- Animation Loop ---
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Raycasting for Hover
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(nodeGroup.children, true);
+
+        nodesArray.forEach((node, j) => {
+          const isHovered =
+            intersects.length > 0 &&
+            intersects.some((i) => i.object.parent === node.group);
+
+          // Animate properties based on hover
+          const targetColor = isHovered ? highlightColor : glassBaseColor;
+          const targetEmissive = isHovered
+            ? highlightColor
+            : new THREE.Color(0x000000);
+
+          node.shell.material.color.lerp(targetColor, 0.1);
+          //   node.shell.material.emissive.lerp(targetEmissive, 0.1);
+          //   node.shell.material.opacity = THREE.MathUtils.lerp(
+          //     node.shell.material.opacity,
+          //     isHovered ? 0.8 : 0.4,
+          //     0.1
+          //   );
+          node.group.position.y = isHovered
+            ? Math.sin(Date.now() * 0.005 + j) * 0.2
+            : 0.0;
+
+          node.group.rotation.y += 0.0025;
+          // node.rotation.x += 0.005;
+          // Subtle floating motion
+          if (isHovered) {
+            node.group.rotation.y += 0.05;
+          }
+        });
+
+        // Movement
+        nodesArray.forEach((node, i) => {});
+
+        renderer.render(scene, camera);
+        labelRenderer.render(scene, camera); // Render labels
+      }
+
+      animate();
+
+      // --- Interaction ---
+      window.addEventListener("mousemove", (e) => {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      });
+
+      // Handle Resize
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      function showSidebar(content) {
+        const sidebarBody = document.getElementById("sidebar-content");
+        sidebarBody.innerHTML = `
+                      <div style="margin-bottom:20px">
+                          <label style="color:#00f2ff; font-size:10px">NODE TYPE</label>
+                          <div style="font-size:18px">${content.name}</div>
+                      </div>
+                      <div style="margin-bottom:20px">
+                          <label style="color:#00f2ff; font-size:10px">STATUS</label>
+                          <div>READY TO PROCESS</div>
+                      </div>
+                      <p>This node represents a ${content.type} step in the futuristic automated workflow.</p>
+                  `;
+      }
+
+      // Add a click listener to handle selection
+      window.addEventListener("click", () => {});
+
+      const sidebar = document.getElementById("property-sidebar");
+      const toggleBtn = document.getElementById("sidebar-toggle");
+
+      toggleBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("hidden");
+      });
+
+      window.addEventListener("resize", () => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        // 1. Update Camera
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+
+        // 2. Update WebGL Renderer
+        renderer.setSize(width, height);
+
+        // 3. Update Label Renderer (The Fix)
+        labelRenderer.setSize(width, height);
+      });
+
+      let currentMode = "move"; // Default mode
+
+      const toolButtons = document.querySelectorAll(".tool-btn");
+
+      toolButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          // Remove active class from all and add to clicked
+          toolButtons.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+
+          currentMode = btn.getAttribute("data-mode");
+
+          // Logic: Disable panning if you are in "Add" mode to prevent
+          // the camera from moving while you try to place a node.
+          controls.enablePan = currentMode === "move";
+
+          console.log("Current Mode:", currentMode);
+        });
+      });
+
+      // Example implementation inside your click listener:
+      window.addEventListener("click", (event) => {
+        raycaster.setFromCamera(mouse, camera);
+
+        if (currentMode === "add") {
+          // Logic to calculate 3D position from mouse and createNode()
+          // For now, let's just log it
+          console.log("Add node mode active: Calculating spawn point...");
+          const intersects = raycaster.intersectObjects(
+            groundGroup.children,
+            true
+          );
+          if (intersects.length > 0) {
+            let ip = intersects[0].point;
+            console.log(Math.round(ip.x), Math.round(ip.z));
+          }
+        } else {
+          // Existing selection logic
+          const intersects = raycaster.intersectObjects(
+            nodeGroup.children,
+            true
+          );
+
+          if (intersects.length > 0) {
+            // Find which node group was clicked
+            const clickedNode = nodesArray.find((n) =>
+              intersects.some((i) => i.object.parent === n.group)
+            );
+
+            if (clickedNode) {
+              console.log(clickedNode);
+              // Update sidebar content dynamically
+              showSidebar(clickedNode);
+            }
+          }
+        }
+      });
+
+      let isDragging = false;
+      let draggedNode = null;
+      const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // Intersection plane at y=0
+      const intersectionPoint = new THREE.Vector3();
+
+      // Add these listeners at the bottom of your script
+      window.addEventListener("mousedown", (event) => {
+        raycaster.setFromCamera(mouse, camera);
+
+        // 1. DELETE MODE
+        if (currentMode === "delete") {
+          const intersectsNodes = raycaster.intersectObjects(
+            nodeGroup.children,
+            true
+          );
+          if (intersectsNodes.length > 0) {
+            const nodeToDelete = nodesArray.find((n) =>
+              intersectsNodes.some((i) => i.object.parent === n.group)
+            );
+            if (nodeToDelete) {
+              // Remove associated connections
+              for (let i = connectionsArray.length - 1; i >= 0; i--) {
+                const c = connectionsArray[i];
+                if (c.nodeA === nodeToDelete || c.nodeB === nodeToDelete) {
+                  connectionLayer.remove(c.line);
+                  connectionsArray.splice(i, 1);
+                }
+              }
+              // Remove node
+              nodeGroup.remove(nodeToDelete.group);
+              nodesArray.splice(nodesArray.indexOf(nodeToDelete), 1);
+            }
+          }
+        }
+
+        // 2. MOVE MODE (Drag Start)
+        if (currentMode === "move") {
+          const intersects = raycaster.intersectObjects(
+            nodeGroup.children,
+            true
+          );
+          if (intersects.length > 0) {
+            draggedNode = nodesArray.find((n) =>
+              intersects.some((i) => i.object.parent === n.group)
+            );
+            if (draggedNode) {
+              isDragging = true;
+              controls.enabled = false;
+            }
+          }
+        }
+
+        // raycaster.setFromCamera(mouse, camera);
+        // const intersects = raycaster.intersectObjects(nodeGroup.children, true);
+
+        // if (intersects.length > 0) {
+        //   // Identify which node was clicked
+        //   draggedNode = nodesArray.find((n) =>
+        //     intersects.some((i) => i.object.parent === n.group)
+        //   );
+
+        //   if (draggedNode) {
+        //     isDragging = true;
+        //     controls.enabled = false; // Disable OrbitControls so the camera doesn't move
+        //   }
+        // }
+      });
+
+      window.addEventListener("mousemove", (event) => {
+        // Update mouse coords (already exists in your code, but ensure it's here)
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        if (isDragging && draggedNode) {
+          raycaster.setFromCamera(mouse, camera);
+
+          // Find intersection with the invisible ground plane
+          if (raycaster.ray.intersectPlane(dragPlane, intersectionPoint)) {
+            // Snap to Grid (Round to nearest 1.0)
+            draggedNode.group.position.set(
+              Math.round(intersectionPoint.x),
+              0,
+              Math.round(intersectionPoint.z)
+            );
+
+            // AUTO-STRETCH: Update all connections linked to this node
+            connectionsArray.forEach((conn) => {
+              if (conn.nodeA === draggedNode || conn.nodeB === draggedNode) {
+                updateConnectionGeometry(conn);
+              }
+            });
+          }
+        }
+      });
+
+      window.addEventListener("mouseup", () => {
+        isDragging = false;
+        draggedNode = null;
+        controls.enabled = true; // Re-enable camera rotation/panning
+      });
+    </script>
+  </body>
+</html>

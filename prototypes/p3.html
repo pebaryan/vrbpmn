@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Futuristic Process Nodes</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #050a10;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+      }
+      #toolbar-bottom {
+        position: absolute;
+        bottom: 20px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        color: #00f2ff;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 12px;
+        letter-spacing: 1px;
+        flex-direction: row;
+      }
+      .label {
+        width: 120px;
+        text-align: center;
+        margin: 0 10px;
+      }
+      .floating-label {
+        color: #00f2ff;
+        font-family: "Segoe UI", sans-serif;
+        padding: 5px 10px;
+        background: rgba(0, 242, 255, 0.1);
+        border: 1px solid rgba(0, 242, 255, 0.5);
+        border-radius: 4px;
+        font-size: 10px;
+        pointer-events: auto; /* Important for clicking */
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        transition: all 0.2s;
+      }
+      .floating-label:hover {
+        background: rgba(0, 242, 255, 0.3);
+      }
+      /* Modal Styling */
+      #modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        background: rgba(5, 10, 16, 0.9);
+        border: 1px solid #00f2ff;
+        font-family: "Segoe UI", sans-serif;
+        color: white;
+        padding: 20px;
+        display: none;
+        z-index: 100;
+        backdrop-filter: blur(10px);
+        border-radius: 8px;
+      }
+
+      /* Top Left Header */
+      #process-header {
+        position: absolute;
+        top: 30px;
+        left: 30px;
+        color: #00f2ff;
+        font-family: "Segoe UI", sans-serif;
+        z-index: 10;
+      }
+      .header-line {
+        width: 50px;
+        height: 2px;
+        background: #00f2ff;
+        margin-bottom: 10px;
+      }
+      .header-sub {
+        font-size: 10px;
+        letter-spacing: 2px;
+        opacity: 0.7;
+      }
+      .header-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 300;
+        letter-spacing: 1px;
+      }
+
+      /* Right Sidebar */
+      #property-sidebar {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        bottom: 20px;
+        width: 300px;
+        background: rgba(10, 20, 30, 0.6); /* Semi-transparent */
+        backdrop-filter: blur(15px); /* Blurred background */
+        border-left: 1px solid rgba(0, 242, 255, 0.3);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        color: white;
+        font-family: "Segoe UI", sans-serif;
+        z-index: 10;
+        border-radius: 4px 0 0 4px;
+      }
+
+      .sidebar-header {
+        padding: 20px;
+        font-size: 14px;
+        letter-spacing: 2px;
+        border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+        color: #00f2ff;
+      }
+
+      .sidebar-body {
+        padding: 20px;
+        flex-grow: 1;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .action-btn {
+        width: 100%;
+        padding: 12px;
+        background: transparent;
+        border: 1px solid #00f2ff;
+        color: #00f2ff;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+
+      .action-btn:hover {
+        background: rgba(0, 242, 255, 0.2);
+      }
+
+      /* Sidebar hidden state */
+      #property-sidebar.hidden {
+        transform: translateX(110%); /* Slides it out of view */
+      }
+
+      /* Toggle Button Styling */
+      #sidebar-toggle {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 20; /* Above the sidebar */
+        background: rgba(10, 20, 30, 0.8);
+        border: 1px solid #00f2ff;
+        color: #00f2ff;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 10px;
+        backdrop-filter: blur(5px);
+        border-radius: 4px 0 0 4px;
+      }
+
+      /* Ensure the sidebar has a transition property */
+      #property-sidebar,
+      #statusbar {
+        transition: transform 0.3s ease-in-out;
+      }
+
+      #statusbar {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        height: 120px;
+        width: 300px;
+        background: rgba(10, 20, 30, 0.6); /* Semi-transparent */
+        backdrop-filter: blur(15px); /* Blurred background */
+        border-left: 1px solid rgba(0, 242, 255, 0.3);
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        color: white;
+        font-family: "Segoe UI", sans-serif;
+        z-index: 10;
+        border-radius: 4px 0 0 4px;
+      }
+
+      .statusbar-body {
+        padding: 8px;
+        flex-grow: 1;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      #statusbar.hidden {
+        transform: translateY(120%); /* Slides it out of view */
+      }
+
+      #statusbar-toggle {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        z-index: 20; /* Above the sidebar */
+        background: rgba(10, 20, 30, 0.8);
+        border: 1px solid #00f2ff;
+        color: #00f2ff;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 10px;
+        font-weight: bold;
+        backdrop-filter: blur(5px);
+        border-radius: 4px 4px 0 0;
+      }
+
+      #toolbar-left {
+        position: absolute;
+        top: 50%;
+        left: 20px;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 20;
+      }
+
+      .tool-btn {
+        background: rgba(10, 20, 30, 0.8);
+        border: 1px solid rgba(0, 242, 255, 0.5);
+        color: #00f2ff;
+        padding: 4px;
+        cursor: pointer;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 10px;
+        backdrop-filter: blur(5px);
+        transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 60px;
+      }
+
+      .tool-btn.active {
+        background: rgba(0, 242, 255, 0.2);
+        border-color: #00f2ff;
+        box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+      }
+
+      .tool-btn:hover {
+        background: rgba(0, 242, 255, 0.1);
+      }
+
+      .tool-btn .icon {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+
+      .node-btn {
+        background: rgba(10, 20, 30, 0.8);
+        border: 1px solid rgba(0, 242, 255, 0.5);
+        color: #00f2ff;
+        padding: 4px;
+        cursor: pointer;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 10px;
+        backdrop-filter: blur(5px);
+        transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 60px;
+        border-radius: 4px;
+        margin-right: 4px;
+      }
+
+      .node-btn.active {
+        background: rgba(0, 242, 255, 0.2);
+        border-color: #00f2ff;
+        box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+      }
+
+      .node-btn:hover {
+        background: rgba(0, 242, 255, 0.1);
+      }
+
+      .node-btn .icon {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar-left">
+      <button class="tool-btn active" data-mode="move">
+        <span class="icon">✥</span> MOVE
+      </button>
+      <button class="tool-btn" data-mode="add">
+        <span class="icon">＋</span> ADD
+      </button>
+      <button class="tool-btn" data-mode="link">
+        <span class="icon">🔗</span> LINK
+      </button>
+      <button
+        class="tool-btn"
+        data-mode="delete"
+        style="color: #ff4b4b; border-color: rgba(255, 75, 75, 0.5)"
+      >
+        <span class="icon">✕</span> DEL
+      </button>
+    </div>
+
+    <div id="toolbar-bottom">
+      <button class="node-btn" data-node-type="start">START</button>
+      <button class="node-btn" data-node-type="usertask">USER TASK</button>
+      <button class="node-btn" data-node-type="servicetask">SERVICE</button>
+      <button class="node-btn" data-node-type="xgateway">EXCLUSIVE</button>
+      <button class="node-btn" data-node-type="pgateway">PARALLEL</button>
+      <button class="node-btn" data-node-type="terminal">TERMINAL</button>
+    </div>
+
+    <div id="process-header">
+      <div class="header-line"></div>
+      <div class="header-content">
+        <h1 class="header-title">FUTURISTIC PROCESS MAP v1.0</h1>
+        <span class="header-sub">SYSTEM STATUS: ACTIVE</span>
+      </div>
+    </div>
+
+    <div id="property-sidebar" class="hidden">
+      <div class="sidebar-header">NODE PROPERTIES</div>
+      <div class="sidebar-body" id="sidebar-content">
+        <p class="empty-state">Select a node to view detailed properties...</p>
+      </div>
+      <div class="sidebar-footer">
+        <button class="action-btn">EXECUTE NODE</button>
+      </div>
+    </div>
+    <button id="sidebar-toggle">⬌</button>
+
+    <div id="statusbar" class="hidden">
+      <div class="sidebar-body" id="sidebar-content">
+        <p class="empty-state" id="statusbar-content">ready...</p>
+      </div>
+    </div>
+    <button id="statusbar-toggle">⬍</button>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { Reflector } from "three/addons/objects/Reflector.js";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import {
+        CSS2DRenderer,
+        CSS2DObject,
+      } from "three/addons/renderers/CSS2DRenderer.js";
+
+      const NODE_SPACING = 5.0; // Increased from 2.5 to 5.0 for sparser layout
+
+      // --- Scene Setup ---
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+
+      document.body.appendChild(renderer.domElement);
+
+      function setStatus(statustext) {
+        document.getElementById("statusbar-content").innerText = statustext;
+      }
+
+      // Label Renderer
+      const labelRenderer = new CSS2DRenderer();
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.domElement.style.position = "absolute";
+      labelRenderer.domElement.style.top = "0px";
+      labelRenderer.domElement.style.pointerEvents = "none"; // Click through to canvas if needed
+      document.body.appendChild(labelRenderer.domElement);
+
+      // Modal container in body
+      const modal = document.createElement("div");
+      modal.id = "modal";
+      modal.innerHTML = `<h3>Node Details</h3><p>Information about this process step...</p><button onclick="this.parentElement.style.display='none'">Close</button>`;
+      document.body.appendChild(modal);
+
+      function createLabel(nodeGroup, text) {
+        const div = document.createElement("div");
+        div.className = "floating-label";
+        div.textContent = text.toUpperCase();
+
+        // Add Click Interaction
+        div.onclick = () => {
+          modal.style.display = "block";
+          modal.querySelector("h3").textContent =
+            text.toUpperCase() + " DETAILS";
+        };
+
+        const label = new CSS2DObject(div);
+        label.position.set(0, 1.5, 0); // Position above the node
+        nodeGroup.add(label);
+        return label;
+      }
+
+      // --- 1. OrbitControls Setup ---
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableRotate = false;
+      // Enable panning (Right-click or two-finger drag)
+      controls.enablePan = true;
+      controls.screenSpacePanning = false; // False forces panning to stay on the XZ plane
+
+      // Optional: If you want left-click to pan instead of right-click
+      controls.mouseButtons = {
+        LEFT: THREE.MOUSE.PAN,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.ROTATE,
+      };
+      controls.enableDamping = true; // Smooth motion
+      //   controls.screenSpacePanning = true; // Allows vertical/horizontal panning
+      controls.minDistance = 2;
+      controls.maxDistance = 20;
+
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      // Constrain Zoom
+      controls.minDistance = 5;
+      controls.maxDistance = 20;
+
+      // Set the initial camera angle (Bird's eye perspective)
+      camera.position.set(0, 5, 10);
+      camera.lookAt(0, 0, 0);
+
+      // 1. Add Fog to the scene (color should match background)
+      scene.background = new THREE.Color(0x020408);
+      scene.fog = new THREE.Fog(0x020408, 5, 25);
+
+      // --- Lighting ---
+      const ambientLight = new THREE.AmbientLight(0x404040, 2);
+      scene.add(ambientLight);
+
+      const pointLight = new THREE.PointLight(0x00f2ff, 15, 50);
+      pointLight.position.set(5, 5, 5);
+      scene.add(pointLight);
+
+      // --- Materials ---
+      const glassBaseColor = new THREE.Color(0x112233);
+      const highlightColor = new THREE.Color(0x414e5c); // Purplish
+      const glassMaterialOld = new THREE.MeshPhysicalMaterial({
+        color: 0x112233,
+        metalness: 0.1,
+        roughness: 0.05,
+        transmission: 0.95, // Glass transparency
+        thickness: 0.5,
+        ior: 1.5,
+        transparent: true,
+        opacity: 0.6,
+        envMapIntensity: 1,
+      });
+      const glassMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0x000000, // Deep black base
+        metalness: 0.1,
+        roughness: 0.4, // Increased roughness for "frosted" look
+        transmission: 0.5, // Blend of transparency and solid
+        thickness: 1.0, // Gives depth to the glass edges
+        transparent: true,
+        emissive: 0x101010,
+        emissiveIntensity: 1,
+        opacity: 0.7, // Matches the semi-transparency in your image
+        envMapIntensity: 1,
+      });
+
+      const neonMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00f2ff,
+        emissive: 0x00f2ff,
+        emissiveIntensity: 10,
+        wireframe: true,
+      });
+
+      // --- Dark Matte Ground (No Mirror) ---
+      const groundGroup = new THREE.Group();
+      const groundGeo = new THREE.PlaneGeometry(100, 100);
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x020408,
+        roughness: 1,
+        metalness: 0,
+      });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -1.5; // Lowered to give nodes space to breathe
+      groundGroup.add(ground);
+
+      // 3. The Grid Overlay
+      const grid = new THREE.GridHelper(50, 50, 0x151515, 0x151515);
+      grid.position.y = -0.74; // Slightly above the mirror to avoid flickering
+      grid.material.opacity = 0.25;
+      grid.material.transparent = true;
+      groundGroup.add(grid);
+
+      scene.add(groundGroup);
+
+      // --- Connection System ---
+      const connectionLayer = new THREE.Group();
+      connectionLayer.position.y = -1.49; // Hovering just above ground
+      scene.add(connectionLayer);
+
+      const footprintLayer = new THREE.Group();
+      footprintLayer.position.y = -1.49; // Hovering just above ground
+      scene.add(footprintLayer);
+
+      function createFootprint(pos) {
+        const geo = new THREE.RingGeometry(0.7, 0.75, 32);
+        const mat = new THREE.MeshBasicMaterial({
+          color: 0x00f2ff,
+          transparent: true,
+          opacity: 0.2,
+          side: THREE.DoubleSide,
+        });
+        const fp = new THREE.Mesh(geo, mat);
+        fp.rotation.x = -Math.PI / 2;
+        fp.position.x = pos.x;
+        fp.position.z = pos.z;
+        footprintLayer.add(fp);
+        footprintArray.push(fp);
+        return fp;
+      }
+
+      // --- Node Logic ---
+      const nodeGroup = new THREE.Group();
+      const nodesArray = [];
+      const footprintArray = [];
+      const connectionsArray = []; // To track dynamic lines
+
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      // --- Node Creation Helper ---
+      function createNode(pos, type, opt) {
+        const group = new THREE.Group();
+        group.name = (opt.name ? opt.name : "") + ":" + type;
+
+        // Outer Rounded Shell
+        let outerGeo;
+        if (type === "start" || type === "terminal")
+          outerGeo = new THREE.CylinderGeometry(0.75, 0.75, 1.25);
+        // SphereGeometry(0.75, 8, 8);
+        else if (type.endsWith("gateway"))
+          outerGeo = new THREE.CylinderGeometry(0.75, 0.75, 1.25);
+        else outerGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+        const shell = new THREE.Mesh(outerGeo, glassMaterial.clone());
+        group.add(shell);
+
+        // Inner Icon (Represented by different geometries)
+        let innerGeo;
+        if (type === "start") innerGeo = new THREE.SphereGeometry(0.3, 24, 24);
+        else if (type === "usertask")
+          innerGeo = new THREE.CylinderGeometry(0.15, 0.25, 0.5);
+        else if (type.endsWith("task"))
+          innerGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        else if (type === "xgateway")
+          innerGeo = new THREE.OctahedronGeometry(0.4);
+        else if (type === "pgateway")
+          innerGeo = new THREE.CapsuleGeometry(0.25, 0.25, 0.5, 4, 1);
+        else innerGeo = new THREE.TorusGeometry(0.3, 0.05, 8, 24);
+
+        const innerIcon = new THREE.Mesh(innerGeo, neonMaterial.clone());
+        group.add(innerIcon);
+
+        group.position.x = pos.x;
+        group.position.z = pos.z;
+        nodeGroup.add(group);
+        nodesArray.push({ group, shell, innerIcon });
+        return group;
+      }
+
+      function createArrowHead() {
+        const geometry = new THREE.ConeGeometry(0.15, 0.4, 8);
+        const material = new THREE.MeshStandardMaterial({
+          color: 0x00f2ff,
+          emissive: 0x00f2ff,
+          emissiveIntensity: 2,
+        });
+        const arrow = new THREE.Mesh(geometry, material);
+        return arrow;
+      }
+
+      function createConnectionOld(nodeA, nodeB, footA, footB) {
+        const material = new THREE.LineBasicMaterial({
+          color: 0x00f2ff,
+          transparent: true,
+          opacity: 0.3,
+        });
+        const geometry = new THREE.BufferGeometry();
+        const line = new THREE.Line(geometry, material);
+
+        const connectionObj = { line, nodeA, nodeB, footA, footB };
+        updateConnectionGeometry(connectionObj);
+
+        connectionLayer.add(line);
+        connectionsArray.push(connectionObj);
+        return connectionObj;
+      }
+
+      function createConnection(nodeA, nodeB, footA, footB) {
+        const material = new THREE.LineBasicMaterial({
+          color: 0x00f2ff,
+          transparent: true,
+          opacity: 0.5,
+        });
+
+        const geometry = new THREE.BufferGeometry();
+        const line = new THREE.Line(geometry, material);
+        const arrow = createArrowHead();
+
+        const connectionObj = { line, arrow, nodeA, nodeB, footA, footB };
+
+        connectionLayer.add(line);
+        connectionLayer.add(arrow); // Add arrow to the scene layer
+
+        updateConnectionGeometry(connectionObj);
+        connectionsArray.push(connectionObj);
+
+        return connectionObj;
+      }
+
+      function ZtoY(p) {
+        return new THREE.Vector2(p.x, p.z);
+      }
+
+      function YtoZ(p) {
+        return new THREE.Vector3(p.x, 0, p.y);
+      }
+
+      function updateConnectionGeometry(conn) {
+        const posA = conn.nodeA.position.clone();
+        const posB = conn.nodeB.position.clone();
+
+        conn.footA.position.x = conn.nodeA.position.x;
+        conn.footA.position.z = conn.nodeA.position.z;
+        conn.footB.position.x = conn.nodeB.position.x;
+        conn.footB.position.z = conn.nodeB.position.z;
+
+        const radius = 0.5; // Corner roundness
+        const offset = 0.75; // Node radius offset
+        const threshold = 0.8; // Minimum distance to allow a corner
+
+        // 1. Calculate direction for offsets
+        const diffX = posB.x - posA.x;
+        const diffZ = posB.z - posA.z;
+
+        // 1.a FALLBACK: If X or Z difference is too small, draw a straight line
+        if (Math.abs(diffX) < threshold || Math.abs(diffZ) < threshold) {
+          const dir = new THREE.Vector3().subVectors(posB, posA).normalize();
+          const startPoint = posA
+            .clone()
+            .add(dir.clone().multiplyScalar(offset));
+          const endPoint = posB.clone().sub(dir.clone().multiplyScalar(offset));
+
+          conn.line.geometry.setFromPoints([startPoint, endPoint]);
+          conn.arrow.position.copy(endPoint);
+          conn.arrow.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            dir
+          );
+          conn.arrow.visible = true;
+          return; // Exit function early
+        }
+
+        // 2. Define the path points (Start -> Corner 1 -> Corner 2 -> End)
+        // We'll create a simple horizontal-then-vertical path
+        const p1 = new THREE.Vector3(
+          posA.x + (diffX > 0 ? offset : -offset),
+          0,
+          posA.z
+        );
+        const p2 = new THREE.Vector3(posB.x, 0, posA.z);
+        const p3 = new THREE.Vector3(
+          posB.x,
+          0,
+          posB.z + (diffZ > 0 ? -offset : offset)
+        );
+
+        // 3. Create a CurvePath for rounded corners
+        const path = new THREE.CurvePath();
+
+        // Line from start to just before the corner
+        const line1 = new THREE.LineCurve3(
+          p1,
+          p2.clone().add(new THREE.Vector3(diffX > 0 ? -radius : radius, 0, 0))
+        );
+
+        // The rounded corner (Quadratic Bezier)
+        const curve = new THREE.QuadraticBezierCurve3(
+          p2.clone().add(new THREE.Vector3(diffX > 0 ? -radius : radius, 0, 0)),
+          p2,
+          p2.clone().add(new THREE.Vector3(0, 0, diffZ > 0 ? radius : -radius))
+        );
+
+        // Line from corner to end
+        const line2 = new THREE.LineCurve3(
+          p2.clone().add(new THREE.Vector3(0, 0, diffZ > 0 ? radius : -radius)),
+          p3
+        );
+
+        path.add(line1);
+        path.add(curve);
+        path.add(line2);
+
+        // 4. Update the Line Geometry
+        const points = path.getPoints(20); // Higher number = smoother corners
+        conn.line.geometry.setFromPoints(points);
+
+        // 5. Update Arrowhead Position and Orientation
+        conn.arrow.position.copy(p3);
+        const dir = new THREE.Vector3(0, 0, diffZ > 0 ? 1 : -1);
+        conn.arrow.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          dir
+        );
+      }
+
+      function updateConnectionGeometryStraight(conn) {
+        const posA = conn.nodeA.position.clone();
+        const posB = conn.nodeB.position.clone();
+
+        conn.footA.position.x = conn.nodeA.position.x;
+        conn.footA.position.z = conn.nodeA.position.z;
+        conn.footB.position.x = conn.nodeB.position.x;
+        conn.footB.position.z = conn.nodeB.position.z;
+
+        // Calculate direction vector
+        const dir = new THREE.Vector3().subVectors(posB, posA).normalize();
+        const distance = posA.distanceTo(posB);
+
+        // Shortest path: Start/End at the edge of the node shells (radius ~0.75)
+        const offset = 0.75;
+        if (distance > offset * 2) {
+          const startPoint = posA
+            .clone()
+            .add(dir.clone().multiplyScalar(offset));
+          const endPoint = posB.clone().sub(dir.clone().multiplyScalar(offset));
+
+          // Update Line
+          conn.line.geometry.setFromPoints([startPoint, endPoint]);
+
+          // Position and Orient Arrowhead at the endPoint
+          conn.arrow.position.copy(endPoint);
+
+          // Point the cone toward Node B
+          // By default, Cone points up (+Y), so we align it to our direction vector
+          conn.arrow.quaternion.setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0),
+            dir
+          );
+          conn.arrow.visible = true;
+        } else {
+          conn.arrow.visible = false; // Hide if nodes are overlapping
+        }
+      }
+
+      function updateConnectionGeometryOld(conn) {
+        const x1 = ZtoY(conn.nodeA.position);
+        const x2 = ZtoY(conn.nodeB.position);
+        conn.footA.position.x = conn.nodeA.position.x;
+        conn.footA.position.z = conn.nodeA.position.z;
+        conn.footB.position.x = conn.nodeB.position.x;
+        conn.footB.position.z = conn.nodeB.position.z;
+
+        const offsetZ = 1.2;
+        const maxOffset = offsetZ + Math.max(x1.y, x2.y);
+        const radius = 0.5;
+        const ringRadius = 0.75; // The gap to leave for the node footprint
+
+        const path = new THREE.Path();
+        // Start at the edge of the ring
+        path.moveTo(x1.x, x1.y - radius + offsetZ);
+        path.lineTo(x1.x, maxOffset - radius);
+        path.quadraticCurveTo(x1.x, maxOffset, x1.x + radius, maxOffset);
+        path.lineTo(x2.x - radius, maxOffset);
+        path.quadraticCurveTo(x2.x, maxOffset, x2.x, maxOffset - radius);
+        // End at the edge of the next ring
+        path.lineTo(x2.x, x2.y - radius + offsetZ);
+
+        const points = path.getPoints();
+
+        conn.line.geometry.setFromPoints(points.map(YtoZ));
+      }
+
+      // --- Updated Node Creation Loop ---
+      const types = [
+        "start",
+        "usertask",
+        "xgateway",
+        "servicetask",
+        "xgateway",
+        // "pgateway",
+        "terminal",
+      ];
+      const nodeFp = {};
+      const nodeLabels = {};
+      var nodeCtr = 0;
+
+      function spawnNode(pos, name, type) {
+        const node = createNode(pos, type, { name: name });
+        const fp = createFootprint(pos);
+        nodeFp[name] = fp;
+        const nodeLabel = createLabel(node, name);
+        nodeLabels[name] = nodeLabel;
+        return { node, fp };
+      }
+
+      let linkSourceNode = null; // Stores the first node clicked in 'link' mode
+
+      const NODE_START = (types.length) * 0.5;
+      var prevNode = null;
+      var prevFp = null;
+      types.forEach((t, i) => {
+        const xPos = (i - NODE_START) * NODE_SPACING;
+        nodeCtr++;
+        const nodeName = "node-" + nodeCtr;
+        const pos = new THREE.Vector3(xPos, 0, 0);
+        const node = createNode(pos, t, { name: nodeName });
+        const fp = createFootprint(pos);
+        nodeFp[nodeName] = fp;
+        const nodeLabel = createLabel(node, nodeName);
+        nodeLabels[nodeName] = nodeLabel;
+
+        // Connect to the next node
+        if (prevNode != null) {
+          // drawRoundedConnection(xPos, xPos + NODE_SPACING);
+          createConnection(prevNode, node, prevFp, fp);
+        }
+        prevNode = node;
+        prevFp = fp;
+      });
+      scene.add(nodeGroup);
+
+      // --- Refined Lighting for Darker Background ---
+      ambientLight.intensity = 0.1; // Much lower
+      pointLight.position.set(0, 10, 5);
+      pointLight.intensity = 30;
+
+      // --- Animation Loop ---
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Raycasting for Hover
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(nodeGroup.children, true);
+
+        nodesArray.forEach((node, j) => {
+          const isHovered =
+            intersects.length > 0 &&
+            intersects.some((i) => i.object.parent === node.group);
+
+          // Animate properties based on hover
+          const targetColor = isHovered ? highlightColor : glassBaseColor;
+          const targetEmissive = isHovered
+            ? highlightColor
+            : new THREE.Color(0x000000);
+
+          node.shell.material.color.lerp(targetColor, 0.1);
+
+          node.group.position.y = isHovered
+            ? Math.sin(Date.now() * 0.005 + j) * 0.2
+            : 0.0;
+
+          node.group.rotation.y += 0.0025;
+          // Subtle floating motion
+          if (isHovered) {
+            node.group.rotation.y += 0.05;
+          }
+        });
+
+        // Movement
+        nodesArray.forEach((node, i) => {});
+
+        renderer.render(scene, camera);
+        labelRenderer.render(scene, camera); // Render labels
+      }
+
+      animate();
+
+      // Handle Resize
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      function showSidebar(content) {
+        const sidebarBody = document.getElementById("sidebar-content");
+        const parts = content.name.split(":");
+        sidebarBody.innerHTML = `
+                      <div style="margin-bottom:20px">
+                          <label style="color:#00f2ff; font-size:10px">NODE NAME</label>
+                          <div style="font-size:18px">${parts[0]}</div>
+                      </div>
+                      <div style="margin-bottom:20px">
+                          <label style="color:#00f2ff; font-size:10px">STATUS</label>
+                          <div>READY TO PROCESS</div>
+                      </div>
+                      <p>This node represents a ${parts[1].toUpperCase()} step in the futuristic automated workflow.</p>
+                  `;
+      }
+
+      const sidebar = document.getElementById("property-sidebar");
+      const toggleBtn = document.getElementById("sidebar-toggle");
+
+      toggleBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("hidden");
+      });
+
+      const statusbar = document.getElementById("statusbar");
+      const statusToggleBtn = document.getElementById("statusbar-toggle");
+
+      statusToggleBtn.addEventListener("click", () => {
+        statusbar.classList.toggle("hidden");
+      });
+
+      window.addEventListener("resize", () => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        // 1. Update Camera
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+
+        // 2. Update WebGL Renderer
+        renderer.setSize(width, height);
+
+        // 3. Update Label Renderer (The Fix)
+        labelRenderer.setSize(width, height);
+      });
+
+      let currentMode = "move"; // Default mode
+      let currentNodeType = "usertask";
+
+      const toolButtons = document.querySelectorAll(".tool-btn");
+
+      toolButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          // Remove active class from all and add to clicked
+          toolButtons.forEach((b) => b.classList.remove("active"));
+          nodeButtons.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+
+          currentMode = btn.getAttribute("data-mode");
+
+          // Logic: Disable panning if you are in "Add" mode to prevent
+          // the camera from moving while you try to place a node.
+          controls.enablePan = currentMode !== "add";
+
+          // Reset linking state when changing modes
+          if (linkSourceNode && currentMode != "link") {
+            linkSourceNode.shell.material.emissive.setHex(0x000000);
+            linkSourceNode = null;
+          }
+
+          if (currentMode === "add") {
+            nodeButtons.forEach((b) => {
+              b.classList.remove("active");
+              if (b.getAttribute("data-node-type") === currentNodeType)
+                b.classList.add("active");
+            });
+          }
+
+          setStatus("Current Mode : " + currentMode);
+        });
+      });
+
+      const nodeButtons = document.querySelectorAll(".node-btn");
+
+      nodeButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          // Remove active class from all and add to clicked
+          nodeButtons.forEach((b) => b.classList.remove("active"));
+          if (currentMode === "add") btn.classList.add("active");
+
+          currentNodeType = btn.getAttribute("data-node-type");
+
+          setStatus("Current Node type : " + currentNodeType);
+        });
+      });
+
+      // Example implementation inside your click listener:
+      window.addEventListener("click", (event) => {
+        raycaster.setFromCamera(mouse, camera);
+
+        if (currentMode === "link") {
+          const intersects = raycaster.intersectObjects(
+            nodeGroup.children,
+            true
+          );
+
+          if (intersects.length > 0) {
+            // Identify the clicked node
+            const clickedNode = nodesArray.find((n) =>
+              intersects.some((i) => i.object.parent === n.group)
+            );
+
+            if (clickedNode) {
+              if (!linkSourceNode) {
+                // STEP 1: Select the source node
+                linkSourceNode = clickedNode;
+                // Visual feedback: briefly highlight the source
+                clickedNode.shell.material.emissive.setHex(0x00f2ff);
+                setStatus("Source node selected. Click another node to link.");
+              } else if (linkSourceNode === clickedNode) {
+                // Deselect if clicking the same node
+                linkSourceNode.shell.material.emissive.setHex(0x000000);
+                linkSourceNode = null;
+              } else {
+                let allowIncoming =
+                  clickedNode.group.name.split(":")[1] != "start";
+                // STEP 2: Create the connection
+                if (allowIncoming) {
+                  let node1name = linkSourceNode.group.name.split(":")[0];
+                  let node2name = clickedNode.group.name.split(":")[0];
+                  createConnection(
+                    linkSourceNode.group,
+                    clickedNode.group,
+                    nodeFp[node1name],
+                    nodeFp[node2name]
+                  );
+
+                  // Reset
+                  linkSourceNode.shell.material.emissive.setHex(0x000000);
+                  linkSourceNode = null;
+                  setStatus("Connection established.");
+                } else {
+                  setStatus("Node start does not allow incoming connection!");
+                }
+              }
+            }
+          }
+        } else if (currentMode === "add") {
+          const intersects = raycaster.intersectObjects(
+            groundGroup.children,
+            true
+          );
+          const Nodeintersects = raycaster.intersectObjects(
+            nodeGroup.children,
+            true
+          );
+          const isNodeButtonHovered =
+            document.querySelectorAll(".node-btn:hover").length > 0;
+          if (
+            intersects.length > 0 &&
+            Nodeintersects.length == 0 &&
+            !isNodeButtonHovered
+          ) {
+            let ip = intersects[0].point;
+            let camX = Math.round(camera.position.x);
+            let hoverToolbtns =
+              document.querySelectorAll(".tool-btn:hover").length > 0;
+            if (Math.abs(ip.x - camX) < 20 && !hoverToolbtns) {
+              nodeCtr++;
+              const nodeName = "node-" + nodeCtr;
+              spawnNode(
+                new THREE.Vector3(ip.x, 0, ip.z),
+                nodeName,
+                currentNodeType
+              );
+            }
+          }
+        } else {
+          // Existing selection logic
+          const intersects = raycaster.intersectObjects(
+            nodeGroup.children,
+            true
+          );
+
+          if (intersects.length > 0) {
+            // Find which node group was clicked
+            const clickedNode = nodesArray.find((n) =>
+              intersects.some((i) => i.object.parent === n.group)
+            );
+
+            if (clickedNode) {
+              // Update sidebar content dynamically
+              showSidebar(clickedNode.group);
+            }
+          }
+        }
+      });
+
+      let isDragging = false;
+      let draggedNode = null;
+      const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // Intersection plane at y=0
+      const intersectionPoint = new THREE.Vector3();
+
+      // Add these listeners at the bottom of your script
+      window.addEventListener("mousedown", (event) => {
+        raycaster.setFromCamera(mouse, camera);
+
+        // 1. DELETE MODE
+        if (currentMode === "delete") {
+          // 1. Set Raycaster threshold for easier line clicking
+          raycaster.params.Line.threshold = 0.2;
+          const intersectsNodes = raycaster.intersectObjects(
+            nodeGroup.children,
+            true
+          );
+          if (intersectsNodes.length > 0) {
+            const nodeToDelete = nodesArray.find((n) =>
+              intersectsNodes.some((i) => i.object.parent === n.group)
+            );
+            if (nodeToDelete) {
+              // Remove associated connections
+              for (let i = connectionsArray.length - 1; i >= 0; i--) {
+                const c = connectionsArray[i];
+                if (
+                  c.nodeA === nodeToDelete.group ||
+                  c.nodeB === nodeToDelete.group
+                ) {
+                  connectionLayer.remove(c.line);
+                  connectionLayer.remove(c.arrow);
+                  connectionsArray.splice(i, 1);
+                }
+              }
+              // Remove footprint and labels
+              let nodeName = nodeToDelete.group.name.split(":")[0];
+              footprintLayer.remove(nodeFp[nodeName]);
+              nodeGroup.remove(nodeLabels[nodeName]);
+              nodeLabels[nodeName].element.remove();
+              delete nodeFp[nodeName];
+              delete nodeLabels[nodeName];
+
+              // Remove node
+              nodeGroup.remove(nodeToDelete.group);
+              nodesArray.splice(nodesArray.indexOf(nodeToDelete), 1);
+              nodeToDelete.shell.geometry.dispose();
+              nodeToDelete.shell.material.dispose();
+              nodeToDelete.innerIcon.geometry.dispose();
+            }
+          }
+
+          // delete connection
+          const lineMeshes = connectionsArray.map((c) => c.line);
+          const intersectsLinks = raycaster.intersectObjects(lineMeshes);
+
+          if (intersectsLinks.length > 0) {
+            const clickedLine = intersectsLinks[0].object;
+
+            // Find the connection object in our array that matches this mesh
+            const connIndex = connectionsArray.findIndex(
+              (c) => c.line === clickedLine
+            );
+
+            if (connIndex !== -1) {
+              const conn = connectionsArray[connIndex];
+
+              // Cleanup: Remove from scene and array
+              connectionLayer.remove(conn.line);
+              connectionLayer.remove(conn.arrow);
+              connectionsArray.splice(connIndex, 1);
+
+              setStatus("Link deleted.");
+            }
+          }
+        }
+
+        // 2. MOVE MODE (Drag Start)
+        if (currentMode === "move") {
+          const intersects = raycaster.intersectObjects(
+            nodeGroup.children,
+            true
+          );
+          if (intersects.length > 0) {
+            draggedNode = nodesArray.find((n) =>
+              intersects.some((i) => i.object.parent === n.group)
+            );
+            if (draggedNode) {
+              isDragging = true;
+              controls.enabled = false;
+            }
+          }
+        }
+      });
+
+      window.addEventListener("mousemove", (event) => {
+        // Update mouse coords (already exists in your code, but ensure it's here)
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        if (currentMode === "delete") {
+          raycaster.params.Line.threshold = 0.2;
+          raycaster.setFromCamera(mouse, camera);
+
+          const lineMeshes = connectionsArray.map((c) => c.line);
+          const intersects = raycaster.intersectObjects(lineMeshes);
+
+          // Reset all lines to original opacity
+          connectionsArray.forEach((c) => (c.line.material.opacity = 0.5));
+
+          // Highlight the one being hovered
+          if (intersects.length > 0) {
+            intersects[0].object.material.opacity = 1.0;
+            document.body.style.cursor = "pointer";
+          } else {
+            document.body.style.cursor = "default";
+          }
+        }
+
+        if (isDragging && draggedNode) {
+          raycaster.setFromCamera(mouse, camera);
+
+          // Find intersection with the invisible ground plane
+          if (raycaster.ray.intersectPlane(dragPlane, intersectionPoint)) {
+            // Snap to Grid (Round to nearest 1.0)
+            draggedNode.group.position.set(
+              Math.round(intersectionPoint.x),
+              0,
+              Math.round(intersectionPoint.z)
+            );
+
+            // AUTO-STRETCH: Update all connections linked to this node
+            let found = false;
+            connectionsArray.forEach((conn) => {
+              if (
+                conn.nodeA === draggedNode.group ||
+                conn.nodeB === draggedNode.group
+              ) {
+                updateConnectionGeometry(conn);
+                found = true;
+              }
+            });
+            if (!found) {
+              let nodeName = draggedNode.group.name.split(":")[0];
+              nodeFp[nodeName].position.x = draggedNode.group.position.x;
+              nodeFp[nodeName].position.z = draggedNode.group.position.z;
+            }
+          }
+        }
+      });
+
+      window.addEventListener("mouseup", () => {
+        isDragging = false;
+        draggedNode = null;
+        controls.enabled = true; // Re-enable camera rotation/panning
+      });
+    </script>
+  </body>
+</html>
