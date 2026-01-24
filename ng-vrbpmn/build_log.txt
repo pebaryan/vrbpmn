@@ -1,0 +1,161 @@
+
+> ng-vrbpmn@0.0.0 build
+> ng build
+
+[33mÔØ»[39m Building...
+[32mÔ£ö[39m Building...
+Application bundle generation failed. [2.811 seconds] - 2026-01-24T22:32:23.016Z
+
+Ôû▓ [WARNING] NG8113: ThPerspectiveCamera is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:48:4:
+      48 Ôöé     ThPerspectiveCamera,
+         ÔòÁ     ~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThAmbientLight is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:49:4:
+      49 Ôöé     ThAmbientLight,
+         ÔòÁ     ~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThPointLight is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:50:4:
+      50 Ôöé     ThPointLight,
+         ÔòÁ     ~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThPlaneGeometry is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:53:4:
+      53 Ôöé     ThPlaneGeometry,
+         ÔòÁ     ~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThMeshStandardMaterial is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:54:4:
+      54 Ôöé     ThMeshStandardMaterial,
+         ÔòÁ     ~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThObject3D is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:55:4:
+      55 Ôöé     ThObject3D,
+         ÔòÁ     ~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThCylinderGeometry is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:56:4:
+      56 Ôöé     ThCylinderGeometry,
+         ÔòÁ     ~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThBoxGeometry is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:57:4:
+      57 Ôöé     ThBoxGeometry,
+         ÔòÁ     ~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThMeshPhysicalMaterial is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:58:4:
+      58 Ôöé     ThMeshPhysicalMaterial,
+         ÔòÁ     ~~~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThSphereGeometry is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:59:4:
+      59 Ôöé     ThSphereGeometry,
+         ÔòÁ     ~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThOctahedronGeometry is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:60:4:
+      60 Ôöé     ThOctahedronGeometry,
+         ÔòÁ     ~~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThCapsuleGeometry is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:61:4:
+      61 Ôöé     ThCapsuleGeometry,
+         ÔòÁ     ~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThTorusGeometry is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:62:4:
+      62 Ôöé     ThTorusGeometry,
+         ÔòÁ     ~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThCSS2DObject is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:63:4:
+      63 Ôöé     ThCSS2DObject,
+         ÔòÁ     ~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThLineBasicMaterial is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:65:4:
+      65 Ôöé     ThLineBasicMaterial,
+         ÔòÁ     ~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThTubeGeometry is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:66:4:
+      66 Ôöé     ThTubeGeometry,
+         ÔòÁ     ~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThRingGeometry is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:67:4:
+      67 Ôöé     ThRingGeometry,
+         ÔòÁ     ~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThMeshBasicMaterial is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:68:4:
+      68 Ôöé     ThMeshBasicMaterial,
+         ÔòÁ     ~~~~~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThOrbitControls is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:69:4:
+      69 Ôöé     ThOrbitControls,
+         ÔòÁ     ~~~~~~~~~~~~~~~
+
+
+Ôû▓ [WARNING] NG8113: ThConeGeometry is not used within the template of ProcessViewNgThreeComponent [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:70:4:
+      70 Ôöé     ThConeGeometry
+         ÔòÁ     ~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'cyanColor' does not exist on type 'ProcessViewNgThreeComponent'. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:109:53:
+      109 Ôöé ...sh-basic-material [color]="cyanColor" [transparent]="true" [op...
+          ÔòÁ                               ~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:39:15:
+      39 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+

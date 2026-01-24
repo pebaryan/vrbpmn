@@ -1,0 +1,1419 @@
+Node.js version v25.3.0 detected.
+Odd numbered Node.js versions will not enter LTS status and should not be used for production. For more information, please see https://nodejs.org/en/about/previous-releases/.
+[33mÔØ»[39m Building...
+[32mÔ£ö[39m Building...
+Application bundle generation failed. [2.927 seconds] - 2026-01-23T16:33:07.806Z
+
+X [ERROR] NG8002: Can't bind to 'shadowmap' since it isn't a known property of 'th-canvas'.
+1. If 'th-canvas' is an Angular component and it has 'shadowmap' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-canvas' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:2:53:
+      2 Ôöé ...th-canvas (onPointerMove)="onMouseMove($event)" [shadowmap]="true">
+        ÔòÁ                                                    ~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-perspective-camera' is not a known element:
+1. If 'th-perspective-camera' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-perspective-camera' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:4:8:
+      4 Ôöé         <th-perspective-camera #camera [args]="cameraArgs" [positio...
+        ÔòÁ         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-perspective-camera'.
+1. If 'th-perspective-camera' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-perspective-camera' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:4:39:
+      4 Ôöé ...spective-camera #camera [args]="cameraArgs" [position]="cameraPos">
+        ÔòÁ                            ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'position' since it isn't a known property of 'th-perspective-camera'.
+1. If 'th-perspective-camera' is an Angular component and it has 'position' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-perspective-camera' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:4:59:
+      4 Ôöé ...spective-camera #camera [args]="cameraArgs" [position]="cameraPos">
+        ÔòÁ                                                ~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-orbit-controls' is not a known element:
+1. If 'th-orbit-controls' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-orbit-controls' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:5:12:
+      5 Ôöé             <th-orbit-controls [enabled]="!state.draggedNodeId() &&...
+        ÔòÁ             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'enabled' since it isn't a known property of 'th-orbit-controls'.
+1. If 'th-orbit-controls' is an Angular component and it has 'enabled' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-orbit-controls' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:5:31:
+      5 Ôöé ...t-controls [enabled]="!state.draggedNodeId() && state.interactio...
+        ÔòÁ               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'enableRotate' since it isn't a known property of 'th-orbit-controls'.
+1. If 'th-orbit-controls' is an Angular component and it has 'enableRotate' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-orbit-controls' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:6:16:
+      6 Ôöé                 [enableRotate]="true" [enableDamping]="true" [dampi...
+        ÔòÁ                 ~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'enableDamping' since it isn't a known property of 'th-orbit-controls'.
+1. If 'th-orbit-controls' is an Angular component and it has 'enableDamping' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-orbit-controls' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:6:38:
+      6 Ôöé ...enableRotate]="true" [enableDamping]="true" [dampingFactor]="0.0...
+        ÔòÁ                         ~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'dampingFactor' since it isn't a known property of 'th-orbit-controls'.
+1. If 'th-orbit-controls' is an Angular component and it has 'dampingFactor' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-orbit-controls' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:6:61:
+      6 Ôöé ...ue" [enableDamping]="true" [dampingFactor]="0.05" [minDistance]="2"
+        ÔòÁ                               ~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'minDistance' since it isn't a known property of 'th-orbit-controls'.
+1. If 'th-orbit-controls' is an Angular component and it has 'minDistance' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-orbit-controls' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:6:84:
+      6 Ôöé ...ue" [enableDamping]="true" [dampingFactor]="0.05" [minDistance]="2"
+        ÔòÁ                                                      ~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'maxDistance' since it isn't a known property of 'th-orbit-controls'.
+1. If 'th-orbit-controls' is an Angular component and it has 'maxDistance' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-orbit-controls' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:7:16:
+      7 Ôöé                 [maxDistance]="50"></th-orbit-controls>
+        ÔòÁ                 ~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-ambient-light' is not a known element:
+1. If 'th-ambient-light' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-ambient-light' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:12:12:
+      12 Ôöé             <th-ambient-light [color]="ambientColor" [intensity]="...
+         ÔòÁ             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'color' since it isn't a known property of 'th-ambient-light'.
+1. If 'th-ambient-light' is an Angular component and it has 'color' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-ambient-light' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:12:30:
+      12 Ôöé ...   <th-ambient-light [color]="ambientColor" [intensity]="ambien...
+         ÔòÁ                         ~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'intensity' since it isn't a known property of 'th-ambient-light'.
+1. If 'th-ambient-light' is an Angular component and it has 'intensity' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-ambient-light' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:12:53:
+      12 Ôöé ...]="ambientColor" [intensity]="ambientIntensity"></th-ambient-li...
+         ÔòÁ                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-point-light' is not a known element:
+1. If 'th-point-light' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-point-light' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:13:12:
+      13 Ôöé             <th-point-light [color]="cyanColor" [intensity]="point...
+         ÔòÁ             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'color' since it isn't a known property of 'th-point-light'.
+1. If 'th-point-light' is an Angular component and it has 'color' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-point-light' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:13:28:
+      13 Ôöé ...      <th-point-light [color]="cyanColor" [intensity]="pointLig...
+         ÔòÁ                          ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'intensity' since it isn't a known property of 'th-point-light'.
+1. If 'th-point-light' is an Angular component and it has 'intensity' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-point-light' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:13:48:
+      13 Ôöé ...or]="cyanColor" [intensity]="pointLightIntensity" [distance]="100"
+         ÔòÁ                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'distance' since it isn't a known property of 'th-point-light'.
+1. If 'th-point-light' is an Angular component and it has 'distance' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-point-light' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:13:82:
+      13 Ôöé ...or]="cyanColor" [intensity]="pointLightIntensity" [distance]="100"
+         ÔòÁ                                                      ~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'position' since it isn't a known property of 'th-point-light'.
+1. If 'th-point-light' is an Angular component and it has 'position' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-point-light' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:14:16:
+      14 Ôöé                 [position]="[0, 10, 5]"></th-point-light>
+         ÔòÁ                 ~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-plane-geometry' is not a known element:
+1. If 'th-plane-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-plane-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:21:20:
+      21 Ôöé ...            <th-plane-geometry [args]="[100, 100]"></th-plane-g...
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-plane-geometry'.
+1. If 'th-plane-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-plane-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:21:39:
+      21 Ôöé ...       <th-plane-geometry [args]="[100, 100]"></th-plane-geometry>
+         ÔòÁ                              ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-mesh-standard-material' is not a known element:
+1. If 'th-mesh-standard-material' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:22:20:
+      22 Ôöé ...          <th-mesh-standard-material [color]="groundColor" [rou...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'color' since it isn't a known property of 'th-mesh-standard-material'.
+1. If 'th-mesh-standard-material' is an Angular component and it has 'color' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:22:47:
+      22 Ôöé ...  <th-mesh-standard-material [color]="groundColor" [roughness]="1"
+         ÔòÁ                                 ~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'roughness' since it isn't a known property of 'th-mesh-standard-material'.
+1. If 'th-mesh-standard-material' is an Angular component and it has 'roughness' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:22:69:
+      22 Ôöé ...  <th-mesh-standard-material [color]="groundColor" [roughness]="1"
+         ÔòÁ                                                       ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'metalness' since it isn't a known property of 'th-mesh-standard-material'.
+1. If 'th-mesh-standard-material' is an Angular component and it has 'metalness' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:23:24:
+      23 Ôöé                         [metalness]="0"></th-mesh-standard-material>
+         ÔòÁ                         ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-object3d' is not a known element:
+1. If 'th-object3d' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-object3d' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:27:16:
+      27 Ôöé                 <th-object3d [object]="grid"></th-object3d>
+         ÔòÁ                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'object' since it isn't a known property of 'th-object3d'.
+1. If 'th-object3d' is an Angular component and it has 'object' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-object3d' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:27:29:
+      27 Ôöé                 <th-object3d [object]="grid"></th-object3d>
+         ÔòÁ                              ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-cylinder-geometry' is not a known element:
+1. If 'th-cylinder-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-cylinder-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:39:24:
+      39 Ôöé ...                  <th-cylinder-geometry *ngIf="isRound(node.type)"
+         ÔòÁ                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-cylinder-geometry'.
+1. If 'th-cylinder-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-cylinder-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:40:28:
+      40 Ôöé ...                [args]="[0.75, 0.75, 1.25, 32]"></th-cylinder-g...
+         ÔòÁ                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-box-geometry' is not a known element:
+1. If 'th-box-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-box-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:41:24:
+      41 Ôöé ...          <th-box-geometry *ngIf="!isRound(node.type)" [args]="...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-box-geometry'.
+1. If 'th-box-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-box-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:41:69:
+      41 Ôöé ...="!isRound(node.type)" [args]="[1.2, 1.2, 1.2]"></th-box-geometry>
+         ÔòÁ                           ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-mesh-physical-material' is not a known element:
+1. If 'th-mesh-physical-material' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-physical-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:43:24:
+      43 Ôöé                         <th-mesh-physical-material
+         ÔòÁ                         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'color' since it isn't a known property of 'th-mesh-physical-material'.
+1. If 'th-mesh-physical-material' is an Angular component and it has 'color' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-physical-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:44:28:
+      44 Ôöé ...          [color]="(state.selectedNodeId() === node.id || state...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'metalness' since it isn't a known property of 'th-mesh-physical-material'.
+1. If 'th-mesh-physical-material' is an Angular component and it has 'metalness' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-physical-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:45:28:
+      45 Ôöé ...                       [metalness]="0.1" [roughness]="0.4" [tra...
+         ÔòÁ                           ~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'roughness' since it isn't a known property of 'th-mesh-physical-material'.
+1. If 'th-mesh-physical-material' is an Angular component and it has 'roughness' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-physical-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:45:46:
+      45 Ôöé ...     [metalness]="0.1" [roughness]="0.4" [transmission]="0.5" [...
+         ÔòÁ                           ~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'transmission' since it isn't a known property of 'th-mesh-physical-material'.
+1. If 'th-mesh-physical-material' is an Angular component and it has 'transmission' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-physical-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:45:64:
+      45 Ôöé ...ss]="0.1" [roughness]="0.4" [transmission]="0.5" [thickness]="1.0"
+         ÔòÁ                                ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'thickness' since it isn't a known property of 'th-mesh-physical-material'.
+1. If 'th-mesh-physical-material' is an Angular component and it has 'thickness' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-physical-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:45:85:
+      45 Ôöé ...ss]="0.1" [roughness]="0.4" [transmission]="0.5" [thickness]="1.0"
+         ÔòÁ                                                     ~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'transparent' since it isn't a known property of 'th-mesh-physical-material'.
+1. If 'th-mesh-physical-material' is an Angular component and it has 'transparent' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-physical-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:46:28:
+      46 Ôöé                             [transparent]="true"
+         ÔòÁ                             ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'emissive' since it isn't a known property of 'th-mesh-physical-material'.
+1. If 'th-mesh-physical-material' is an Angular component and it has 'emissive' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-physical-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:47:28:
+      47 Ôöé ...          [emissive]="(state.selectedNodeId() === node.id || st...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'emissiveIntensity' since it isn't a known property of 'th-mesh-physical-material'.
+1. If 'th-mesh-physical-material' is an Angular component and it has 'emissiveIntensity' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-physical-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:48:28:
+      48 Ôöé ...          [emissiveIntensity]="(state.selectedNodeId() === node...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'opacity' since it isn't a known property of 'th-mesh-physical-material'.
+1. If 'th-mesh-physical-material' is an Angular component and it has 'opacity' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-physical-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:49:28:
+      49 Ôöé                             [opacity]="0.7">
+         ÔòÁ                             ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-sphere-geometry' is not a known element:
+1. If 'th-sphere-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-sphere-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:55:24:
+      55 Ôöé ...          <th-sphere-geometry *ngIf="node.type === 'start'" [ar...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-sphere-geometry'.
+1. If 'th-sphere-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-sphere-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:55:74:
+      55 Ôöé ...ode.type === 'start'" [args]="[0.3, 24, 24]"></th-sphere-geometry>
+         ÔòÁ                          ~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-cylinder-geometry' is not a known element:
+1. If 'th-cylinder-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-cylinder-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:56:24:
+      56 Ôöé ...            <th-cylinder-geometry *ngIf="node.type === 'usertask'"
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-cylinder-geometry'.
+1. If 'th-cylinder-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-cylinder-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:57:28:
+      57 Ôöé ...                 [args]="[0.15, 0.25, 0.5, 32]"></th-cylinder-g...
+         ÔòÁ                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-box-geometry' is not a known element:
+1. If 'th-box-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-box-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:58:24:
+      58 Ôöé ...          <th-box-geometry *ngIf="node.type === 'servicetask'" ...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-box-geometry'.
+1. If 'th-box-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-box-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:58:77:
+      58 Ôöé ...ype === 'servicetask'" [args]="[0.5, 0.5, 0.5]"></th-box-geometry>
+         ÔòÁ                           ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-octahedron-geometry' is not a known element:
+1. If 'th-octahedron-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-octahedron-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:59:24:
+      59 Ôöé ...          <th-octahedron-geometry *ngIf="node.type === 'xgateway'"
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-octahedron-geometry'.
+1. If 'th-octahedron-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-octahedron-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:60:28:
+      60 Ôöé                             [args]="[0.4]"></th-octahedron-geometry>
+         ÔòÁ                             ~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-capsule-geometry' is not a known element:
+1. If 'th-capsule-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-capsule-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:61:24:
+      61 Ôöé ...             <th-capsule-geometry *ngIf="node.type === 'pgateway'"
+         ÔòÁ                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-capsule-geometry'.
+1. If 'th-capsule-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-capsule-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:62:28:
+      62 Ôöé ...                  [args]="[0.25, 0.25, 4, 8]"></th-capsule-geom...
+         ÔòÁ                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-torus-geometry' is not a known element:
+1. If 'th-torus-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-torus-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:63:24:
+      63 Ôöé ...               <th-torus-geometry *ngIf="node.type === 'terminal'"
+         ÔòÁ                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-torus-geometry'.
+1. If 'th-torus-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-torus-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:64:28:
+      64 Ôöé ...                  [args]="[0.3, 0.05, 8, 24]"></th-torus-geometry>
+         ÔòÁ                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-mesh-standard-material' is not a known element:
+1. If 'th-mesh-standard-material' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:66:24:
+      66 Ôöé ...          <th-mesh-standard-material [color]="cyanColor" [emiss...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'color' since it isn't a known property of 'th-mesh-standard-material'.
+1. If 'th-mesh-standard-material' is an Angular component and it has 'color' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:66:51:
+      66 Ôöé ...esh-standard-material [color]="cyanColor" [emissive]="cyanColor...
+         ÔòÁ                          ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'emissive' since it isn't a known property of 'th-mesh-standard-material'.
+1. If 'th-mesh-standard-material' is an Angular component and it has 'emissive' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:66:71:
+      66 Ôöé ... [color]="cyanColor" [emissive]="cyanColor" [emissiveIntensity]...
+         ÔòÁ                         ~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'emissiveIntensity' since it isn't a known property of 'th-mesh-standard-material'.
+1. If 'th-mesh-standard-material' is an Angular component and it has 'emissiveIntensity' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:66:94:
+      66 Ôöé ...color]="cyanColor" [emissive]="cyanColor" [emissiveIntensity]="10"
+         ÔòÁ                                              ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'wireframe' since it isn't a known property of 'th-mesh-standard-material'.
+1. If 'th-mesh-standard-material' is an Angular component and it has 'wireframe' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:67:28:
+      67 Ôöé ...                       [wireframe]="true"></th-mesh-standard-ma...
+         ÔòÁ                           ~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-css2d-object' is not a known element:
+1. If 'th-css2d-object' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-css2d-object' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:72:16:
+      72 Ôöé                 <th-css2d-object [position]="[0, 1.5, 0]">
+         ÔòÁ                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'position' since it isn't a known property of 'th-css2d-object'.
+1. If 'th-css2d-object' is an Angular component and it has 'position' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-css2d-object' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:72:33:
+      72 Ôöé                 <th-css2d-object [position]="[0, 1.5, 0]">
+         ÔòÁ                                  ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-line-basic-material' is not a known element:
+1. If 'th-line-basic-material' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-line-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:81:20:
+      81 Ôöé ...          <th-line-basic-material [color]="cyanColor" [transpar...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'color' since it isn't a known property of 'th-line-basic-material'.
+1. If 'th-line-basic-material' is an Angular component and it has 'color' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-line-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:81:44:
+      81 Ôöé ...  <th-line-basic-material [color]="cyanColor" [transparent]="true"
+         ÔòÁ                              ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'transparent' since it isn't a known property of 'th-line-basic-material'.
+1. If 'th-line-basic-material' is an Angular component and it has 'transparent' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-line-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:81:64:
+      81 Ôöé ...  <th-line-basic-material [color]="cyanColor" [transparent]="true"
+         ÔòÁ                                                  ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'opacity' since it isn't a known property of 'th-line-basic-material'.
+1. If 'th-line-basic-material' is an Angular component and it has 'opacity' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-line-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:82:24:
+      82 Ôöé ...          [opacity]="(state.interactionMode() === 'delete' && s...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-tube-geometry' is not a known element:
+1. If 'th-tube-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-tube-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:89:20:
+      89 Ôöé ...          <th-tube-geometry [args]="[getConnPath(conn), 20, 0.3...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-tube-geometry'.
+1. If 'th-tube-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-tube-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:89:38:
+      89 Ôöé ...-geometry [args]="[getConnPath(conn), 20, 0.3, 8, false]"></th-...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-mesh-basic-material' is not a known element:
+1. If 'th-mesh-basic-material' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:90:20:
+      90 Ôöé ...          <th-mesh-basic-material [transparent]="true" [opacity...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'transparent' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'transparent' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:90:44:
+      90 Ôöé ...        <th-mesh-basic-material [transparent]="true" [opacity]="0"
+         ÔòÁ                                    ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'opacity' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'opacity' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:90:65:
+      90 Ôöé ...        <th-mesh-basic-material [transparent]="true" [opacity]="0"
+         ÔòÁ                                                         ~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'depthTest' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'depthTest' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:91:24:
+      91 Ôöé                         [depthTest]="true"></th-mesh-basic-material>
+         ÔòÁ                         ~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-cone-geometry' is not a known element:
+1. If 'th-cone-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-cone-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:96:20:
+      96 Ôöé ...           <th-cone-geometry [args]="[0.15, 0.4, 8]"></th-cone-...
+         ÔòÁ               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-cone-geometry'.
+1. If 'th-cone-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-cone-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:96:38:
+      96 Ôöé ...     <th-cone-geometry [args]="[0.15, 0.4, 8]"></th-cone-geometry>
+         ÔòÁ                           ~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-mesh-standard-material' is not a known element:
+1. If 'th-mesh-standard-material' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:97:20:
+      97 Ôöé ...          <th-mesh-standard-material [color]="cyanColor" [emiss...
+         ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'color' since it isn't a known property of 'th-mesh-standard-material'.
+1. If 'th-mesh-standard-material' is an Angular component and it has 'color' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:97:47:
+      97 Ôöé ...-mesh-standard-material [color]="cyanColor" [emissive]="cyanColor"
+         ÔòÁ                            ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'emissive' since it isn't a known property of 'th-mesh-standard-material'.
+1. If 'th-mesh-standard-material' is an Angular component and it has 'emissive' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:97:67:
+      97 Ôöé ...-mesh-standard-material [color]="cyanColor" [emissive]="cyanColor"
+         ÔòÁ                                                ~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'emissiveIntensity' since it isn't a known property of 'th-mesh-standard-material'.
+1. If 'th-mesh-standard-material' is an Angular component and it has 'emissiveIntensity' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-standard-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:98:24:
+      98 Ôöé ...                    [emissiveIntensity]="2"></th-mesh-standard-...
+         ÔòÁ                        ~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-ring-geometry' is not a known element:
+1. If 'th-ring-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-ring-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:103:20:
+      103 Ôöé ...          <th-ring-geometry [args]="[0.7, 0.75, 32]"></th-ring...
+          ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-ring-geometry'.
+1. If 'th-ring-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-ring-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:103:38:
+      103 Ôöé ...   <th-ring-geometry [args]="[0.7, 0.75, 32]"></th-ring-geometry>
+          ÔòÁ                         ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-mesh-basic-material' is not a known element:
+1. If 'th-mesh-basic-material' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:104:20:
+      104 Ôöé ...          <th-mesh-basic-material [color]="cyanColor" [transpa...
+          ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'color' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'color' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:104:44:
+      104 Ôöé ...h-mesh-basic-material [color]="cyanColor" [transparent]="true"...
+          ÔòÁ                          ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'transparent' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'transparent' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:104:64:
+      104 Ôöé ...material [color]="cyanColor" [transparent]="true" [opacity]="0.2"
+          ÔòÁ                                 ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'opacity' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'opacity' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:104:85:
+      104 Ôöé ...material [color]="cyanColor" [transparent]="true" [opacity]="0.2"
+          ÔòÁ                                                      ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'side' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'side' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:105:24:
+      105 Ôöé ...                   [side]="THREE.DoubleSide"></th-mesh-basic-m...
+          ÔòÁ                       ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-ring-geometry' is not a known element:
+1. If 'th-ring-geometry' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-ring-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:108:20:
+      108 Ôöé ...          <th-ring-geometry [args]="[0.7, 0.75, 32]"></th-ring...
+          ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'args' since it isn't a known property of 'th-ring-geometry'.
+1. If 'th-ring-geometry' is an Angular component and it has 'args' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-ring-geometry' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:108:38:
+      108 Ôöé ...   <th-ring-geometry [args]="[0.7, 0.75, 32]"></th-ring-geometry>
+          ÔòÁ                         ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8001: 'th-mesh-basic-material' is not a known element:
+1. If 'th-mesh-basic-material' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:109:20:
+      109 Ôöé ...          <th-mesh-basic-material [color]="cyanColor" [transpa...
+          ÔòÁ              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'color' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'color' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:109:44:
+      109 Ôöé ...h-mesh-basic-material [color]="cyanColor" [transparent]="true"...
+          ÔòÁ                          ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'transparent' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'transparent' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:109:64:
+      109 Ôöé ...material [color]="cyanColor" [transparent]="true" [opacity]="0.2"
+          ÔòÁ                                 ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'opacity' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'opacity' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:109:85:
+      109 Ôöé ...material [color]="cyanColor" [transparent]="true" [opacity]="0.2"
+          ÔòÁ                                                      ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'side' since it isn't a known property of 'th-mesh-basic-material'.
+1. If 'th-mesh-basic-material' is an Angular component and it has 'side' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'th-mesh-basic-material' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component. [plugin angular-compiler]
+
+    src/app/process-view-ngthree/process-view-ngthree.component.html:110:24:
+      110 Ôöé ...                   [side]="THREE.DoubleSide"></th-mesh-basic-m...
+          ÔòÁ                       ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ProcessViewNgThreeComponent.
+
+    src/app/process-view-ngthree/process-view-ngthree.component.ts:10:15:
+      10 Ôöé   templateUrl: './process-view-ngthree.component.html',
+         ÔòÁ                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+

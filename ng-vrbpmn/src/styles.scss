@@ -1,0 +1,259 @@
+/* You can add global styles to this file, and also import other style files */
+
+body {
+  margin: 0;
+  background-color: #050a10;
+  overflow: hidden;
+}
+canvas {
+  display: block;
+}
+#toolbar-left {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 20;
+}
+.tool-btn {
+  background: rgba(10, 20, 30, 0.8);
+  border: 1px solid rgba(0, 242, 255, 0.5);
+  color: #00f2ff;
+  padding: 4px;
+  cursor: pointer;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 10px;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 60px;
+}
+.tool-btn.active {
+  background: rgba(0, 242, 255, 0.2);
+  border-color: #00f2ff;
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+}
+.tool-btn:hover {
+  background: rgba(0, 242, 255, 0.1);
+}
+.tool-btn .icon {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+.node-btn {
+  background: rgba(10, 20, 30, 0.8);
+  border: 1px solid rgba(0, 242, 255, 0.5);
+  color: #00f2ff;
+  padding: 4px;
+  cursor: pointer;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 10px;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 60px;
+  border-radius: 4px;
+  margin-right: 4px;
+}
+.node-btn.active {
+  background: rgba(0, 242, 255, 0.2);
+  border-color: #00f2ff;
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+}
+.node-btn:hover {
+  background: rgba(0, 242, 255, 0.1);
+}
+.node-btn .icon {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+#toolbar-bottom {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  color: #00f2ff;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 12px;
+  letter-spacing: 1px;
+  flex-direction: row;
+}
+.label {
+  width: 120px;
+  text-align: center;
+  margin: 0 10px;
+}
+.floating-label {
+  color: #00f2ff;
+  font-family: "Segoe UI", sans-serif;
+  padding: 5px 10px;
+  background: rgba(0, 242, 255, 0.1);
+  border: 1px solid rgba(0, 242, 255, 0.5);
+  border-radius: 4px;
+  font-size: 10px;
+  pointer-events: auto;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s;
+}
+.floating-label:hover {
+  background: rgba(0, 242, 255, 0.3);
+}
+#modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  background: rgba(5, 10, 16, 0.9);
+  border: 1px solid #00f2ff;
+  font-family: "Segoe UI", sans-serif;
+  color: white;
+  padding: 20px;
+  display: none;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+}
+#process-header {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  color: #00f2ff;
+  font-family: "Segoe UI", sans-serif;
+  z-index: 10;
+}
+.header-line {
+  width: 50px;
+  height: 2px;
+  background: #00f2ff;
+  margin-bottom: 10px;
+}
+.header-sub {
+  font-size: 10px;
+  letter-spacing: 2px;
+  opacity: 0.7;
+}
+.header-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+#property-sidebar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  bottom: 20px;
+  width: 300px;
+  background: rgba(10, 20, 30, 0.6);
+  backdrop-filter: blur(15px);
+  border-left: 1px solid rgba(0, 242, 255, 0.3);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  color: white;
+  font-family: "Segoe UI", sans-serif;
+  z-index: 10;
+  border-radius: 4px 0 0 4px;
+}
+.sidebar-header {
+  padding: 20px;
+  font-size: 14px;
+  letter-spacing: 2px;
+  border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+  color: #00f2ff;
+}
+.sidebar-body {
+  padding: 20px;
+  flex-grow: 1;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.sidebar-footer {
+  padding: 20px;
+}
+.action-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid #00f2ff;
+  color: #00f2ff;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.action-btn:hover {
+  background: rgba(0, 242, 255, 0.2);
+}
+#property-sidebar.hidden {
+  transform: translateX(110%);
+}
+#sidebar-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 20;
+  background: rgba(10, 20, 30, 0.8);
+  border: 1px solid #00f2ff;
+  color: #00f2ff;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 10px;
+  backdrop-filter: blur(5px);
+  border-radius: 4px 0 0 4px;
+}
+#property-sidebar,
+#statusbar {
+  transition: transform 0.3s ease-in-out;
+}
+#statusbar {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  height: 120px;
+  width: 300px;
+  background: rgba(10, 20, 30, 0.6);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(0, 242, 255, 0.3);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  color: white;
+  font-family: "Segoe UI", sans-serif;
+  z-index: 10;
+  border-radius: 4px;
+}
+.statusbar-body {
+  padding: 8px;
+  flex-grow: 1;
+  font-size: 13px;
+  line-height: 1.6;
+}
+#statusbar.hidden {
+  transform: translateX(-110%);
+}
+#statusbar-toggle {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 20;
+  background: rgba(10, 20, 30, 0.8);
+  border: 1px solid #00f2ff;
+  color: #00f2ff;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 10px;
+  font-weight: bold;
+  backdrop-filter: blur(5px);
+  border-radius: 0 4px 4px 0;
+}
