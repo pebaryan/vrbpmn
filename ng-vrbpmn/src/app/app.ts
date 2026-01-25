@@ -4,7 +4,7 @@ import { ProcessViewNgThreeComponent } from './process-view-ngthree/process-view
   selector: 'app-root',
   standalone: true,
   imports: [ProcessViewNgThreeComponent],
-  template: '<app-process-view-ngthree></app-process-view-ngthree>',
+  templateUrl: 'app.component.html',
   styleUrl: './app.scss'
 })
 export class App { }

@@ -1,13 +1,19 @@
 import { provideZonelessChangeDetection } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { App } from './app';
+import { ProcessViewNgThreeComponent } from './process-view-ngthree/process-view-ngthree.component';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [provideZonelessChangeDetection()]
-    }).compileComponents();
+    })
+    // Override the heavy 3‑D component to avoid canvas errors in the test env.
+    .overrideComponent(ProcessViewNgThreeComponent, {
+      set: { template: '<div></div>' }
+    })
+    .compileComponents();
   });
 
   it('should create the app', () => {
