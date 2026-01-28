@@ -31,6 +31,7 @@ export class ProcessStateService {
   public interactionMode = signal<InteractionMode>('move');
   public currentNodeType = signal<NodeType>('usertask');
   public selectedNodeId = signal<string | null>(null);
+  public selectedNodeIds = signal<string[]>([]);
   public selectedConnectionId = signal<string | null>(null);
   public draggedNodeId = signal<string | null>(null);
   public hoveredNodeId = signal<string | null>(null);
@@ -98,9 +99,11 @@ export class ProcessStateService {
     this.statusMessage.set(`Mode: ${mode.toUpperCase()}`);
     if (mode !== 'link') {
       this.selectedNodeId.set(null);
+      this.selectedNodeIds.set([]);
     }
     if (mode === 'delete') {
       this.selectedNodeId.set(null);
+      this.selectedNodeIds.set([]);
       this.selectedConnectionId.set(null);
     }
   }
@@ -142,6 +145,7 @@ export class ProcessStateService {
     this.nodes.update(nodes => nodes.filter(n => n.id !== id));
     this.connections.update(conns => conns.filter(c => c.sourceId !== id && c.targetId !== id));
     if (this.selectedNodeId() === id) this.selectedNodeId.set(null);
+    this.selectedNodeIds.update(ids => ids.filter(nodeId => nodeId !== id));
     if (this.selectedConnectionId()) this.selectedConnectionId.set(null);
     this.isDirty.set(true);
     this.statusMessage.set(`Deleted Node ${id}`);
@@ -196,22 +200,27 @@ export class ProcessStateService {
       const sourceId = this.selectedNodeId();
       if (!sourceId) {
         this.selectedNodeId.set(id);
+        this.selectedNodeIds.set([id]);
         this.statusMessage.set('Source node selected. Click target node.');
       } else if (sourceId === id) {
         this.selectedNodeId.set(null);
+        this.selectedNodeIds.set([]);
         this.statusMessage.set('Deselected source node.');
       } else {
         this.addConnection(sourceId, id);
         this.selectedNodeId.set(null);
+        this.selectedNodeIds.set([]);
       }
     } else if (this.interactionMode() === 'delete') {
       this.deleteNode(id);
     } else if (this.interactionMode() === 'move') {
       this.selectedNodeId.set(id);
+      this.selectedNodeIds.set([id]);
       this.draggedNodeId.set(id);
       this.statusMessage.set(`Dragging Node ${id}`);
     } else {
       this.selectedNodeId.set(id);
+      this.selectedNodeIds.set([id]);
       this.statusMessage.set(`Selected Node ${id}`);
     }
   }
@@ -222,12 +231,14 @@ export class ProcessStateService {
 
   public selectConnection(id: string) {
     this.selectedNodeId.set(null);
+    this.selectedNodeIds.set([]);
     this.selectedConnectionId.set(id);
     this.statusMessage.set(`Selected Connection ${id}`);
   }
 
   public clearSelection() {
     this.selectedNodeId.set(null);
+    this.selectedNodeIds.set([]);
     this.selectedConnectionId.set(null);
     this.draggedNodeId.set(null);
     this.statusMessage.set('Selection cleared.');
@@ -239,17 +250,36 @@ export class ProcessStateService {
   }
 
   public deleteSelected() {
-    const selectedNode = this.selectedNodeId();
+    const selectedNodes = this.selectedNodeIds();
     const selectedConnection = this.selectedConnectionId();
-    if (selectedNode) {
-      this.deleteNode(selectedNode);
+    if (selectedNodes.length > 0) {
+      selectedNodes.forEach(nodeId => this.deleteNode(nodeId));
       this.selectedNodeId.set(null);
+      this.selectedNodeIds.set([]);
       return;
     }
     if (selectedConnection) {
       this.deleteConnection(selectedConnection);
       this.selectedConnectionId.set(null);
     }
+  }
+
+  public toggleNodeSelection(id: string) {
+    if (this.interactionMode() !== 'move') return;
+    const selected = new Set(this.selectedNodeIds());
+    if (selected.has(id)) {
+      selected.delete(id);
+      if (this.selectedNodeId() === id) {
+        const next = Array.from(selected).at(-1) ?? null;
+        this.selectedNodeId.set(next);
+      }
+    } else {
+      selected.add(id);
+      this.selectedNodeId.set(id);
+    }
+    this.selectedNodeIds.set(Array.from(selected));
+    this.selectedConnectionId.set(null);
+    this.statusMessage.set(`Selected ${this.selectedNodeIds().length} node(s).`);
   }
 
   public updateNodeName(id: string, name: string) {

@@ -90,6 +90,8 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
 
   // Geometry cache to prevent recreation on every frame
   private geometryCache = new Map<string, THREE.BufferGeometry>();
+  private dragStartPoint: THREE.Vector3 | null = null;
+  private dragStartPositions = new Map<string, THREE.Vector3>();
 
   // Computed signal for connection geometries - only recalculates when nodes/connections change
   public connectionGeometries = computed(() => {
@@ -147,6 +149,21 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
   }
 
   onNodeDown(event: any, nodeId: string) {
+    const shiftKey = !!(event?.event?.shiftKey ?? event?.domEvent?.shiftKey ?? event?.shiftKey);
+    if (this.state.interactionMode() === 'move') {
+      if (shiftKey) {
+        this.state.toggleNodeSelection(nodeId);
+        return;
+      }
+      this.state.selectNode(nodeId);
+      this.dragStartPoint = this.getDragPoint(event) ?? this.state.allNodes().find(n => n.id === nodeId)?.position.clone() ?? null;
+      this.dragStartPositions.clear();
+      this.state.selectedNodeIds().forEach(id => {
+        const node = this.state.allNodes().find(n => n.id === id);
+        if (node) this.dragStartPositions.set(id, node.position.clone());
+      });
+      return;
+    }
     this.state.selectNode(nodeId);
   }
 
@@ -297,16 +314,41 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
       if (groundIntersect) {
         const pos = groundIntersect.point.clone();
         pos.y = 0;
-        if (this.state.snapToGrid()) {
-          pos.x = Math.round(pos.x);
-          pos.z = Math.round(pos.z);
+        if (!this.dragStartPoint) {
+          this.dragStartPoint = pos.clone();
+          this.dragStartPositions.clear();
+          this.state.selectedNodeIds().forEach(id => {
+            const node = this.state.allNodes().find(n => n.id === id);
+            if (node) this.dragStartPositions.set(id, node.position.clone());
+          });
         }
-        this.state.moveNode(draggedId, pos);
+        const delta = pos.clone().sub(this.dragStartPoint);
+        const selectedIds = this.state.selectedNodeIds();
+        const snap = this.state.snapToGrid();
+        selectedIds.forEach(id => {
+          const start = this.dragStartPositions.get(id);
+          if (!start) return;
+          const next = start.clone().add(delta);
+          if (snap) {
+            next.x = Math.round(next.x);
+            next.z = Math.round(next.z);
+          }
+          this.state.moveNode(id, next);
+        });
       }
     }
   }
 
   onMouseUp(event: MouseEvent) {
     this.state.endDrag();
+    this.dragStartPoint = null;
+    this.dragStartPositions.clear();
+  }
+
+  private getDragPoint(event: any): THREE.Vector3 | null {
+    const intersects = event?.intersects;
+    if (!intersects?.length) return null;
+    const groundHit = intersects.find((i: any) => i.object?.name === 'ground');
+    return (groundHit?.point ?? intersects[0]?.point ?? null) ? (groundHit?.point ?? intersects[0].point).clone() : null;
   }
 }

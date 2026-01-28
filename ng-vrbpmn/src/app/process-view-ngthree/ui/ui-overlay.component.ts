@@ -43,6 +43,9 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
     <div id="property-sidebar" [class.hidden]="!isSidebarVisible()">
       <div class="sidebar-header">NODE PROPERTIES</div>
       <div class="sidebar-body" *ngIf="selectedNode() as node; else emptyState">
+        <div class="selection-count" *ngIf="state.selectedNodeIds().length > 1">
+          {{state.selectedNodeIds().length}} NODES SELECTED
+        </div>
         <div class="prop-group">
           <label>NODE ID</label>
           <input class="prop-input" [value]="node.id" (change)="onIdChange(node.id, $event)" />

@@ -45,11 +45,11 @@
                         <th-boxGeometry *ngIf="!isRound(node.type)" [args]="[1.2, 1.2, 1.2]"></th-boxGeometry>
 
                         <th-meshPhysicalMaterial
-                            [color]="(state.selectedNodeId() === node.id || state.hoveredNodeId() === node.id) ? COLORS.HIGHLIGHT : COLORS.BLACK"
+                            [color]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? COLORS.HIGHLIGHT : COLORS.BLACK"
                             [metalness]="0.1" [roughness]="0.4" [transmission]="0.5" [thickness]="1.0"
                             [transparent]="true"
-                            [emissive]="(state.selectedNodeId() === node.id || state.hoveredNodeId() === node.id) ? COLORS.CYAN : COLORS.DARK_GRAY"
-                            [emissiveIntensity]="(state.selectedNodeId() === node.id || state.hoveredNodeId() === node.id) ? 2 : 1"
+                            [emissive]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? COLORS.CYAN : COLORS.DARK_GRAY"
+                            [emissiveIntensity]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? 2 : 1"
                             [opacity]="0.7">
                         </th-meshPhysicalMaterial>
                     </th-mesh>
