@@ -1,6 +1,9 @@
 # VRBPMN - Virtual Reality Business Process Model and Notation
 
-A futuristic 3D process modeling tool built with Angular and Three.js for visualizing and interacting with business process workflows in an immersive 3D environment.
+SPEAR VR BPMN Authoring is a futuristic 3D/VR process modeling tool built with Angular and Three.js for visualizing and interacting with business process workflows in an immersive environment. It exports BPMN XML + BPMN DI for validation in Camunda Modeler and provides a desktop fallback alongside WebXR readiness.
+
+## Docs
+- Product requirements: `PRD.md`
 
 ## 🚀 Quick Start
 
@@ -15,6 +18,22 @@ npm install
 ng serve
 
 # Open your browser to http://localhost:4200
+```
+
+## 🛠 Development
+
+```bash
+# Generate a new component (Angular CLI)
+ng generate component component-name
+
+# Build for production
+ng build
+
+# Run unit tests
+ng test
+
+# Run end-to-end tests (requires an e2e framework)
+ng e2e
 ```
 
 ## 📁 Project Structure

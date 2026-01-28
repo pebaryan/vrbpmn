@@ -41,35 +41,46 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
     </div>
 
     <div id="property-sidebar" [class.hidden]="!isSidebarVisible()">
-      <div class="sidebar-header">NODE PROPERTIES</div>
-      <div class="sidebar-body" *ngIf="selectedNode() as node; else emptyState">
-        <div class="selection-count" *ngIf="state.selectedNodeIds().length > 1">
-          {{state.selectedNodeIds().length}} NODES SELECTED
+      <div class="sidebar-header">PROPERTIES</div>
+      <div class="sidebar-body">
+        <div class="section-title">PROCESS</div>
+        <div class="prop-group">
+          <label>PROCESS ID</label>
+          <input class="prop-input" [value]="state.processId()" (change)="onProcessIdChange($event)" />
         </div>
         <div class="prop-group">
-          <label>NODE ID</label>
-          <input class="prop-input" [value]="node.id" (change)="onIdChange(node.id, $event)" />
+          <label>PROCESS NAME</label>
+          <input class="prop-input" [value]="state.processName()" (change)="onProcessNameChange($event)" />
         </div>
-        <div class="prop-group">
-          <label>TYPE</label>
-          <div class="prop-val">{{node.type | uppercase}}</div>
-        </div>
-        <div class="prop-group">
-          <label>NAME</label>
-          <input class="prop-input" [value]="node.name" (change)="onNameChange(node.id, $event)" />
-        </div>
-        <div class="prop-group">
-          <label>DESCRIPTION</label>
-          <textarea class="prop-textarea" rows="4" [value]="node.description || ''"
-            (change)="onDescriptionChange(node.id, $event)"></textarea>
-        </div>
-        <p>This node represents a {{node.type.toUpperCase()}} step in the futuristic automated workflow.</p>
-      </div>
-      <ng-template #emptyState>
-        <div class="sidebar-body">
+        <div class="section-divider"></div>
+        <div class="section-title">NODE</div>
+        <ng-container *ngIf="selectedNode() as node; else emptyState">
+          <div class="selection-count" *ngIf="state.selectedNodeIds().length > 1">
+            {{state.selectedNodeIds().length}} NODES SELECTED
+          </div>
+          <div class="prop-group">
+            <label>NODE ID</label>
+            <input class="prop-input" [value]="node.id" (change)="onIdChange(node.id, $event)" />
+          </div>
+          <div class="prop-group">
+            <label>TYPE</label>
+            <div class="prop-val">{{node.type | uppercase}}</div>
+          </div>
+          <div class="prop-group">
+            <label>NAME</label>
+            <input class="prop-input" [value]="node.name" (change)="onNameChange(node.id, $event)" />
+          </div>
+          <div class="prop-group">
+            <label>DESCRIPTION</label>
+            <textarea class="prop-textarea" rows="4" [value]="node.description || ''"
+              (change)="onDescriptionChange(node.id, $event)"></textarea>
+          </div>
+          <p>This node represents a {{node.type.toUpperCase()}} step in the futuristic automated workflow.</p>
+        </ng-container>
+        <ng-template #emptyState>
           <p class="empty-state">Select a node to view detailed properties...</p>
-        </div>
-      </ng-template>
+        </ng-template>
+      </div>
       <div class="sidebar-footer">
         <button class="action-btn" (click)="state.openModal()">VIEW DETAILS</button>
         <button class="action-btn" (click)="state.saveToLocalStorage()">QUICK SAVE</button>
@@ -150,6 +161,16 @@ export class UIOverlayComponent {
     this.state.updateNodeDescription(id, value);
   }
 
+  public onProcessIdChange(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.state.updateProcessId(value);
+  }
+
+  public onProcessNameChange(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.state.updateProcessName(value);
+  }
+
   public exportBpmn() {
     const xml = this.state.exportBpmnXml();
     const blob = new Blob([xml], { type: 'application/xml' });
@@ -187,12 +208,6 @@ export class UIOverlayComponent {
     }
   }
 
-  @HostListener('window:beforeunload', ['$event'])
-  public onBeforeUnload(event: BeforeUnloadEvent) {
-    if (!this.state.isDirty()) return;
-    event.preventDefault();
-    event.returnValue = '';
-  }
 
   public onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;

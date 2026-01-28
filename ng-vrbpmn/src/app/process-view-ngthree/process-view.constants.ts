@@ -11,11 +11,12 @@ export const SCENE_CONFIG = {
 
 // Connection Configuration
 export const CONNECTION_CONFIG = {
-    Y_POSITION: SCENE_CONFIG.GROUND_Y + SCENE_CONFIG.GROUND_OFFSET,
+    // Lift connections slightly above ground to avoid z-fighting at shallow camera angles
+    Y_POSITION: SCENE_CONFIG.GROUND_Y + 0.1,
     CORNER_RADIUS: 0.5,
     NODE_OFFSET: 0.75,
     MIN_DISTANCE_FOR_CORNER: 1.0,
-    PATH_SEGMENTS: 20,
+    PATH_SEGMENTS: 32,
     LINE_OPACITY: 0.5,
     HOVER_OPACITY: 1.0,
     TUBE_RADIUS: 0.3,

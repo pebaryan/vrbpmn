@@ -5,13 +5,13 @@
             [args]="[CAMERA_CONFIG.FOV, CAMERA_CONFIG.ASPECT, CAMERA_CONFIG.NEAR, CAMERA_CONFIG.FAR]"
             [position]="[CAMERA_CONFIG.POSITION.x, CAMERA_CONFIG.POSITION.y, CAMERA_CONFIG.POSITION.z]"
             [lookAt]="lookAt">
-            <th-orbitControls [enabled]="!state.draggedNodeId() && state.interactionMode() !== 'add'"
+            <th-orbitControls #controls [enabled]="!state.draggedNodeId() && state.interactionMode() !== 'add'"
                 [enableRotate]="true" [enableDamping]="true" [dampingFactor]="0.05" [minDistance]="2"
                 [target]="[0, 0, 0]"
                 [maxDistance]="50"></th-orbitControls>
         </th-perspectiveCamera>
 
-        <th-scene [background]="COLORS.FOG">
+        <th-scene [background]="COLORS.FOG" (onPointerMove)="onMouseMove($event)">
             <!-- Lights -->
             <th-ambientLight [color]="COLORS.AMBIENT" [intensity]="LIGHT_CONFIG.AMBIENT_INTENSITY"></th-ambientLight>
             <th-pointLight [color]="COLORS.CYAN" [intensity]="LIGHT_CONFIG.POINT_LIGHT_INTENSITY" [distance]="100"
@@ -21,7 +21,7 @@
             <th-group [position]="[0, 0, 0]">
                 <!-- Mirror/Ground -->
                 <th-mesh name="ground" [rotation]="[-Math.PI / 2, 0, 0]" [position]="[0, -1.5, 0]"
-                    (onClick)="onCanvasClick($event)">
+                    (onPointerDown)="onGroundPointer($event)">
                     <th-planeGeometry [args]="[100, 100]"></th-planeGeometry>
                     <th-meshStandardMaterial [color]="COLORS.GROUND" [roughness]="1"
                         [metalness]="0"></th-meshStandardMaterial>
@@ -81,8 +81,9 @@
             <!-- Connections -->
             <th-group *ngFor="let conn of state.allConnections()">
                 <!-- Line -->
-                <th-line [geometry]="getConnGeometry(conn)">
+                <th-line [geometry]="getConnGeometry(conn)" [renderOrder]="2">
                     <th-lineBasicMaterial [color]="COLORS.CYAN" [transparent]="true"
+                        [depthTest]="false" [depthWrite]="false"
                         [opacity]="(state.selectedConnectionId() === conn.id || (state.interactionMode() === 'delete' && state.hoveredConnectionId() === conn.id)) ? 1.0 : 0.5">
                     </th-lineBasicMaterial>
                 </th-line>
@@ -120,4 +121,6 @@
 
     <!-- UI Overlay -->
     <app-ui-overlay></app-ui-overlay>
+
+    <button class="reset-btn" (click)="resetView()">Reset View</button>
 </div>

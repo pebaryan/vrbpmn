@@ -18,3 +18,17 @@ th-canvas {
     height: 100%;
     position: relative;
 }
+
+.reset-btn {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    z-index: 25;
+    padding: 10px 14px;
+    background: rgba(10, 20, 30, 0.8);
+    border: 1px solid #00f2ff;
+    color: #00f2ff;
+    cursor: pointer;
+    border-radius: 4px;
+    letter-spacing: 1px;
+}

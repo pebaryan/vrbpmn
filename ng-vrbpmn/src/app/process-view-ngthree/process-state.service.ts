@@ -131,12 +131,16 @@ export class ProcessStateService {
   }
 
   public moveNode(id: string, position: THREE.Vector3) {
-    // Optimized: Mutate position directly instead of creating new array
-    const node = this.nodes().find(n => n.id === id);
-    if (node) {
-      node.position.copy(position);
-      // Trigger reactivity with a shallow update
-      this.nodes.set([...this.nodes()]);
+    // Replace node with a new position vector to ensure change detection downstream
+    let changed = false;
+    this.nodes.update(nodes =>
+      nodes.map(n => {
+        if (n.id !== id) return n;
+        changed = true;
+        return { ...n, position: position.clone() };
+      })
+    );
+    if (changed) {
       this.isDirty.set(true);
     }
   }
@@ -303,6 +307,10 @@ export class ProcessStateService {
       this.statusMessage.set('Node ID cannot be empty.');
       return;
     }
+    if (!this.isValidXmlId(nextId)) {
+      this.statusMessage.set('Node ID must start with a letter or underscore and contain only letters, numbers, ., -, or _.');
+      return;
+    }
     if (nextId === id) {
       return;
     }
@@ -328,6 +336,38 @@ export class ProcessStateService {
     if (this.selectedNodeId() === id) this.selectedNodeId.set(nextId);
     if (this.draggedNodeId() === id) this.draggedNodeId.set(nextId);
     if (this.hoveredNodeId() === id) this.hoveredNodeId.set(nextId);
+  }
+
+  public updateProcessId(nextIdRaw: string) {
+    const nextId = nextIdRaw.trim();
+    if (!nextId) {
+      this.statusMessage.set('Process ID cannot be empty.');
+      return;
+    }
+    if (!this.isValidXmlId(nextId)) {
+      this.statusMessage.set('Process ID must start with a letter or underscore and contain only letters, numbers, ., -, or _.');
+      return;
+    }
+    if (nextId === this.processId()) {
+      return;
+    }
+    this.processId.set(nextId);
+    this.isDirty.set(true);
+    this.statusMessage.set('Updated process ID.');
+  }
+
+  public updateProcessName(nextNameRaw: string) {
+    const nextName = nextNameRaw.trim();
+    if (!nextName) {
+      this.statusMessage.set('Process name cannot be empty.');
+      return;
+    }
+    if (nextName === this.processName()) {
+      return;
+    }
+    this.processName.set(nextName);
+    this.isDirty.set(true);
+    this.statusMessage.set('Updated process name.');
   }
 
   public openModal() {
@@ -443,8 +483,14 @@ export class ProcessStateService {
 
       this.nodes.set(nodes);
       this.connections.set(connections);
-      this.processId.set(data.processId ?? this.processId());
-      this.processName.set(data.processName ?? this.processName());
+      const nextProcessId = data.processId ?? this.processId();
+      const nextProcessName = data.processName ?? this.processName();
+      if (nextProcessId && this.isValidXmlId(nextProcessId)) {
+        this.processId.set(nextProcessId);
+      }
+      if (nextProcessName && nextProcessName.trim()) {
+        this.processName.set(nextProcessName.trim());
+      }
 
       this.selectedNodeId.set(null);
       this.draggedNodeId.set(null);
@@ -601,5 +647,9 @@ ${edgesXml}
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
+  }
+
+  private isValidXmlId(id: string): boolean {
+    return /^[A-Za-z_][A-Za-z0-9._-]*$/.test(id);
   }
 }
