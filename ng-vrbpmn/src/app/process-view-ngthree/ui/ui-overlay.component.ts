@@ -8,7 +8,7 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
     <div id="process-header">
       <div class="header-line"></div>
       <div class="header-content">
-        <h1 class="header-title">FUTURISTIC PROCESS MAP v1.0</h1>
+        <h1 class="header-title">VRBPMN</h1>
         <span class="header-sub">SYSTEM STATUS: ACTIVE</span>
       </div>
     </div>
@@ -128,7 +128,7 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
 })
 export class UIOverlayComponent {
   public state = inject(ProcessStateService);
-  public isSidebarVisible = signal(true);
+  public isSidebarVisible = signal(false);
   public webxrSupported = signal<boolean | null>(null);
   @ViewChild('fileInput') public fileInput?: ElementRef<HTMLInputElement>;
 

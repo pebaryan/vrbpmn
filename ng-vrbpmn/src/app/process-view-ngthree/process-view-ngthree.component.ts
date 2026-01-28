@@ -1,4 +1,4 @@
-import { Component, inject, computed, NO_ERRORS_SCHEMA, OnDestroy, HostListener, ViewChild } from '@angular/core';
+import { Component, inject, computed, NO_ERRORS_SCHEMA, OnDestroy, HostListener, ViewChild, OnInit, ElementRef, ChangeDetectorRef } from '@angular/core';
 import {
   NgxThreeModule,
   ThPerspectiveCamera,
@@ -25,7 +25,11 @@ import {
   ThRingGeometry,
   ThMeshBasicMaterial,
   ThOrbitControls,
-  ThConeGeometry
+  ThConeGeometry,
+  ThEngineService,
+  HOST_ELEMENT,
+  provideWebGLRenderer,
+  provideCSS2dRenderer
 } from 'ngx-three';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
@@ -65,22 +69,49 @@ import { SCENE_CONFIG, CONNECTION_CONFIG, NODE_CONFIG, ARROW_CONFIG, FOOTPRINT_C
     ThLineBasicMaterial,
     ThTubeGeometry,
     ThRingGeometry,
-    ThMeshBasicMaterial,
-    ThOrbitControls,
-    ThConeGeometry
+  ThMeshBasicMaterial,
+  ThOrbitControls,
+  ThConeGeometry
+  ],
+  providers: [
+    ThEngineService,
+    { provide: HOST_ELEMENT, useExisting: ElementRef },
+    ...provideWebGLRenderer(),
+    ...provideCSS2dRenderer()
   ],
   schemas: [NO_ERRORS_SCHEMA] // Keep it for extra safety with non-standard attributes
 })
-export class ProcessViewNgThreeComponent implements OnDestroy {
+export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
   @ViewChild('camera') private cameraRef?: ThPerspectiveCamera;
   @ViewChild('controls') private controlsRef?: ThOrbitControls;
+  @ViewChild('scene') private sceneRef?: any;
   // ===== Services =====
   public state = inject(ProcessStateService);
+  private engine = inject(ThEngineService);
+  private cdr = inject(ChangeDetectorRef);
 
   // ===== Template Helpers =====
   public Math = Math;
   public THREE = THREE;
   public lookAt: [number, number, number] = [0, 0, 0];
+  public sceneOffset = computed<[number, number, number]>(() => {
+    const nodes = this.state.allNodes();
+    if (!nodes.length) return [0, 0, 0];
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    nodes.forEach(node => {
+      minX = Math.min(minX, node.position.x);
+      maxX = Math.max(maxX, node.position.x);
+      minZ = Math.min(minZ, node.position.z);
+      maxZ = Math.max(maxZ, node.position.z);
+    });
+    const centerX = (minX + maxX) / 2;
+    const centerZ = (minZ + maxZ) / 2;
+    const depth = 3.5;
+    return [-centerX, 0, -centerZ - depth];
+  });
 
   // ===== Constants (exposed for template) =====
   public readonly COLORS = COLORS;
@@ -100,7 +131,13 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
   private dragPlaneY = 0;
   private lastDragPlanePoint: THREE.Vector3 | null = null;
   private lastCamera: THREE.Camera | null = null;
+  private prevCameraPos: THREE.Vector3 | null = null;
+  private prevControlsTarget: THREE.Vector3 | null = null;
+  private prevNodePositions: Map<string, THREE.Vector3> | null = null;
   private readonly snapStep = 0.5;
+  private xrSession: any = null;
+  public xrSupported: boolean | null = null;
+  public xrActive = false;
 
   // Computed signal for connection geometries - only recalculates when nodes/connections change
   public connectionGeometries = computed(() => {
@@ -141,6 +178,26 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
     if (this.grid.material instanceof THREE.Material) {
       this.grid.material.transparent = true;
       this.grid.material.opacity = SCENE_CONFIG.GRID_OPACITY;
+    }
+  }
+
+  async ngOnInit() {
+    if (!('xr' in navigator)) {
+      this.xrSupported = false;
+      return;
+    }
+    try {
+      const supported = await (navigator as any).xr?.isSessionSupported?.('immersive-vr');
+      // Defer state update to next tick to avoid ExpressionChanged errors
+      Promise.resolve().then(() => {
+        this.xrSupported = !!supported;
+        this.cdr.markForCheck();
+      });
+    } catch {
+      Promise.resolve().then(() => {
+        this.xrSupported = false;
+        this.cdr.markForCheck();
+      });
     }
   }
 
@@ -363,6 +420,13 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
     this.handleDrag(dragPoint);
   }
 
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Escape' && this.xrActive) {
+      this.endVrSession();
+    }
+  }
+
   private handleDrag(dragPoint: THREE.Vector3) {
     this.lastDragPlanePoint = dragPoint.clone();
     const pos = dragPoint.clone();
@@ -423,6 +487,32 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
 
   private snapValue(value: number): number {
     return Math.round(value / this.snapStep) * this.snapStep;
+  }
+
+  private getRenderer(): any {
+    return (
+      (this.cameraRef as any)?._renderer ??
+      (this.cameraRef as any)?.renderer ??
+      (this.engine as any)?.wegblRenderer ??
+      (this.engine as any)?.webglRenderer ??
+      null
+    );
+  }
+
+  private patchRendererSetSize(renderer: any, disable: boolean) {
+    if (!renderer) return;
+    if (disable) {
+      if (!renderer.__origSetSize) {
+        renderer.__origSetSize = renderer.setSize;
+        renderer.setSize = function (w: any, h: any, updateStyle?: any) {
+          if (this.xr?.isPresenting) return this;
+          return renderer.__origSetSize.call(this, w, h, updateStyle);
+        };
+      }
+    } else if (renderer.__origSetSize) {
+      renderer.setSize = renderer.__origSetSize;
+      delete renderer.__origSetSize;
+    }
   }
 
   private projectPointerToPlane(event: any, planeY: number): THREE.Vector3 | null {
@@ -499,6 +589,84 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
     return candidates.some(e => e?.shiftKey === true);
   }
 
+  public async toggleVr() {
+    if (this.xrActive) {
+      await this.endVrSession();
+      return;
+    }
+    if (!this.xrSupported) {
+      this.state.statusMessage.set('WebXR not available.');
+      return;
+    }
+    try {
+      const renderer = this.getRenderer();
+      if (!renderer) {
+        this.state.statusMessage.set('XR renderer not available.');
+        return;
+      }
+      this.storeCameraState();
+      this.applyVrSceneOffset();
+      if (renderer.xr) {
+        renderer.xr.enabled = true;
+        renderer.xr.setReferenceSpaceType?.('local-floor');
+      }
+      const session = await (navigator as any).xr.requestSession('immersive-vr', {
+        optionalFeatures: ['local-floor']
+      });
+      this.patchRendererSetSize(renderer, true);
+      await renderer.xr?.setSession?.(session);
+      renderer.xr.enabled = true;
+      // Drive render loop through engine during XR
+      renderer.setAnimationLoop?.(() => {
+        const sceneObj = this.sceneRef?.object3d ?? this.sceneRef?._objRef ?? this.sceneRef?.threeObject;
+        const camObj = (this.cameraRef as any)?._objRef ?? (this.cameraRef as any)?.object3d ?? (this.cameraRef as any)?.threeObject ?? this.lastCamera;
+        if (sceneObj && camObj) {
+          renderer.render(sceneObj, camObj);
+        } else {
+          this.engine.render();
+        }
+      });
+      this.xrSession = session;
+      this.xrActive = true;
+      session.addEventListener('end', () => {
+        this.xrActive = false;
+        this.xrSession = null;
+        renderer.xr?.setSession?.(null);
+        this.patchRendererSetSize(renderer, false);
+        renderer.xr.enabled = false;
+        renderer.setAnimationLoop?.(null);
+        this.restoreVrSceneOffset();
+        this.restoreCameraState();
+        this.state.statusMessage.set('Exited VR session.');
+      });
+      this.state.statusMessage.set('Entered VR session.');
+    } catch (err: any) {
+      console.error(err);
+      this.state.statusMessage.set('Failed to start VR session.');
+    }
+  }
+
+  private async endVrSession() {
+    try {
+      const renderer = this.getRenderer();
+      const session = this.xrSession || renderer?.xr?.getSession?.();
+      if (session) {
+        await session.end();
+      } else if (renderer) {
+        renderer.xr?.setSession?.(null);
+        renderer.xr.enabled = false;
+        renderer.setAnimationLoop?.(null);
+        this.restoreCameraState();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      this.xrSession = null;
+      this.xrActive = false;
+      this.state.statusMessage.set('Exited VR session.');
+    }
+  }
+
   public resetView() {
     const cam: THREE.PerspectiveCamera | undefined =
       (this.cameraRef as any)?.object3d ??
@@ -522,5 +690,62 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
       }
       controls.update?.();
     }
+  }
+
+  private storeCameraState() {
+    const cam: any =
+      (this.cameraRef as any)?.object3d ??
+      (this.cameraRef as any)?.object3D ??
+      (this.cameraRef as any)?.threeObject ??
+      (this.cameraRef as any)?._objRef ??
+      (this.cameraRef as any)?.camera ??
+      null;
+    if (cam) {
+      this.prevCameraPos = cam.position.clone();
+    }
+    const controls: any = (this.controlsRef as any)?._objRef ?? (this.controlsRef as any);
+    if (controls?.target) {
+      this.prevControlsTarget = controls.target.clone?.() ?? null;
+    }
+  }
+
+  private restoreCameraState() {
+    const cam: any =
+      (this.cameraRef as any)?.object3d ??
+      (this.cameraRef as any)?.object3D ??
+      (this.cameraRef as any)?.threeObject ??
+      (this.cameraRef as any)?._objRef ??
+      (this.cameraRef as any)?.camera ??
+      null;
+    if (cam && this.prevCameraPos) {
+      cam.position.copy(this.prevCameraPos);
+      cam.lookAt(CAMERA_CONFIG.LOOK_AT);
+      cam.updateProjectionMatrix();
+    }
+    const controls: any = (this.controlsRef as any)?._objRef ?? (this.controlsRef as any);
+    if (controls && this.prevControlsTarget) {
+      controls.target.set(this.prevControlsTarget.x, this.prevControlsTarget.y, this.prevControlsTarget.z);
+      controls.update?.();
+    }
+  }
+
+  private applyVrSceneOffset() {
+    const nodes = this.state.allNodes();
+    if (!nodes.length) return;
+    const offset = this.sceneOffset();
+    this.prevNodePositions = new Map();
+    nodes.forEach(node => {
+      this.prevNodePositions?.set(node.id, node.position.clone());
+      const next = node.position.clone().add(new THREE.Vector3(offset[0], offset[1], offset[2]));
+      this.state.moveNode(node.id, next);
+    });
+  }
+
+  private restoreVrSceneOffset() {
+    if (!this.prevNodePositions) return;
+    this.prevNodePositions.forEach((pos, id) => {
+      this.state.moveNode(id, pos);
+    });
+    this.prevNodePositions = null;
   }
 }

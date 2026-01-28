@@ -11,109 +11,111 @@
                 [maxDistance]="50"></th-orbitControls>
         </th-perspectiveCamera>
 
-        <th-scene [background]="COLORS.FOG" (onPointerMove)="onMouseMove($event)">
+        <th-scene #scene [background]="COLORS.FOG" (onPointerMove)="onMouseMove($event)">
             <!-- Lights -->
             <th-ambientLight [color]="COLORS.AMBIENT" [intensity]="LIGHT_CONFIG.AMBIENT_INTENSITY"></th-ambientLight>
             <th-pointLight [color]="COLORS.CYAN" [intensity]="LIGHT_CONFIG.POINT_LIGHT_INTENSITY" [distance]="100"
                 [position]="[0, 10, 5]"></th-pointLight>
 
-            <!-- Ground Group -->
             <th-group [position]="[0, 0, 0]">
-                <!-- Mirror/Ground -->
-                <th-mesh name="ground" [rotation]="[-Math.PI / 2, 0, 0]" [position]="[0, -1.5, 0]"
-                    (onPointerDown)="onGroundPointer($event)">
-                    <th-planeGeometry [args]="[100, 100]"></th-planeGeometry>
-                    <th-meshStandardMaterial [color]="COLORS.GROUND" [roughness]="1"
-                        [metalness]="0"></th-meshStandardMaterial>
-                </th-mesh>
-
-                <!-- Grid -->
-                <th-object3D [object]="grid"></th-object3D>
-            </th-group>
-
-            <!-- Nodes -->
-            <th-group *ngFor="let node of state.allNodes()" [position]="node.position"
-                (onPointerOver)="state.hoverNode(node.id, true)" (onPointerOut)="state.hoverNode(node.id, false)"
-                (onPointerDown)="onNodeDown($event, node.id)">
-
-                <!-- Physical Node -->
-                <th-group (onBeforeRender)="onNodeRender($event, node.id)">
-                    <!-- Outer Shell -->
-                    <th-mesh>
-                        <th-cylinderGeometry *ngIf="isRound(node.type)"
-                            [args]="[0.75, 0.75, 1.25, 32]"></th-cylinderGeometry>
-                        <th-boxGeometry *ngIf="!isRound(node.type)" [args]="[1.2, 1.2, 1.2]"></th-boxGeometry>
-
-                        <th-meshPhysicalMaterial
-                            [color]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? COLORS.HIGHLIGHT : COLORS.BLACK"
-                            [metalness]="0.1" [roughness]="0.4" [transmission]="0.5" [thickness]="1.0"
-                            [transparent]="true"
-                            [emissive]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? COLORS.CYAN : COLORS.DARK_GRAY"
-                            [emissiveIntensity]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? 2 : 1"
-                            [opacity]="0.7">
-                        </th-meshPhysicalMaterial>
+                <!-- Ground Group -->
+                <th-group [position]="[0, 0, 0]">
+                    <!-- Mirror/Ground -->
+                    <th-mesh name="ground" [rotation]="[-Math.PI / 2, 0, 0]" [position]="[0, -1.5, 0]"
+                        (onPointerDown)="onGroundPointer($event)">
+                        <th-planeGeometry [args]="[100, 100]"></th-planeGeometry>
+                        <th-meshStandardMaterial [color]="COLORS.GROUND" [roughness]="1"
+                            [metalness]="0"></th-meshStandardMaterial>
                     </th-mesh>
 
-                    <!-- Inner Icon -->
-                    <th-mesh>
-                        <th-sphereGeometry *ngIf="node.type === 'start'" [args]="[0.3, 24, 24]"></th-sphereGeometry>
-                        <th-cylinderGeometry *ngIf="node.type === 'usertask'"
-                            [args]="[0.15, 0.25, 0.5, 32]"></th-cylinderGeometry>
-                        <th-boxGeometry *ngIf="node.type === 'servicetask'" [args]="[0.5, 0.5, 0.5]"></th-boxGeometry>
-                        <th-octahedronGeometry *ngIf="node.type === 'xgateway'"
-                            [args]="[0.4]"></th-octahedronGeometry>
-                        <th-capsuleGeometry *ngIf="node.type === 'pgateway'"
-                            [args]="[0.25, 0.25, 4, 8]"></th-capsuleGeometry>
-                        <th-torusGeometry *ngIf="node.type === 'terminal'"
-                            [args]="[0.3, 0.05, 8, 24]"></th-torusGeometry>
-
-                        <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
-                            [emissiveIntensity]="10" [wireframe]="true"></th-meshStandardMaterial>
-                    </th-mesh>
+                    <!-- Grid -->
+                    <th-object3D [object]="grid"></th-object3D>
                 </th-group>
 
-                <!-- Label -->
-                <th-cSS2DObject [position]="[0, 1.5, 0]">
-                    <div class="floating-label" (click)="onLabelClick($event, node.id)">{{node.name | uppercase}}</div>
-                </th-cSS2DObject>
-            </th-group>
+                <!-- Nodes -->
+                <th-group *ngFor="let node of state.allNodes()" [position]="node.position"
+                    (onPointerOver)="state.hoverNode(node.id, true)" (onPointerOut)="state.hoverNode(node.id, false)"
+                    (onPointerDown)="onNodeDown($event, node.id)">
 
-            <!-- Connections -->
-            <th-group *ngFor="let conn of state.allConnections()">
-                <!-- Line -->
-                <th-line [geometry]="getConnGeometry(conn)" [renderOrder]="2">
-                    <th-lineBasicMaterial [color]="COLORS.CYAN" [transparent]="true"
-                        [depthTest]="false" [depthWrite]="false"
-                        [opacity]="(state.selectedConnectionId() === conn.id || (state.interactionMode() === 'delete' && state.hoveredConnectionId() === conn.id)) ? 1.0 : 0.5">
-                    </th-lineBasicMaterial>
-                </th-line>
+                    <!-- Physical Node -->
+                    <th-group (onBeforeRender)="onNodeRender($event, node.id)">
+                        <!-- Outer Shell -->
+                        <th-mesh>
+                            <th-cylinderGeometry *ngIf="isRound(node.type)"
+                                [args]="[0.75, 0.75, 1.25, 32]"></th-cylinderGeometry>
+                            <th-boxGeometry *ngIf="!isRound(node.type)" [args]="[1.2, 1.2, 1.2]"></th-boxGeometry>
 
-                <!-- Click Target -->
-                <th-mesh (onPointerOver)="state.hoverConnection(conn.id, true)"
-                    (onPointerOut)="state.hoverConnection(conn.id, false)" (onClick)="onConnClick($event, conn.id)">
-                    <th-tubeGeometry [args]="[getConnPath(conn), 20, 0.3, 8, false]"></th-tubeGeometry>
-                    <th-meshBasicMaterial [transparent]="true" [opacity]="0"
-                        [depthTest]="true"></th-meshBasicMaterial>
-                </th-mesh>
+                            <th-meshPhysicalMaterial
+                                [color]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? COLORS.HIGHLIGHT : COLORS.BLACK"
+                                [metalness]="0.1" [roughness]="0.4" [transmission]="0.5" [thickness]="1.0"
+                                [transparent]="true"
+                                [emissive]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? COLORS.CYAN : COLORS.DARK_GRAY"
+                                [emissiveIntensity]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? 2 : 1"
+                                [opacity]="0.7">
+                            </th-meshPhysicalMaterial>
+                        </th-mesh>
 
-                <!-- Arrowhead -->
-                <th-mesh [position]="getArrowPos(conn)" [quaternion]="getArrowQuat(conn)">
-                    <th-coneGeometry [args]="[0.15, 0.4, 8]"></th-coneGeometry>
-                    <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
-                        [emissiveIntensity]="2"></th-meshStandardMaterial>
-                </th-mesh>
+                        <!-- Inner Icon -->
+                        <th-mesh>
+                            <th-sphereGeometry *ngIf="node.type === 'start'" [args]="[0.3, 24, 24]"></th-sphereGeometry>
+                            <th-cylinderGeometry *ngIf="node.type === 'usertask'"
+                                [args]="[0.15, 0.25, 0.5, 32]"></th-cylinderGeometry>
+                            <th-boxGeometry *ngIf="node.type === 'servicetask'" [args]="[0.5, 0.5, 0.5]"></th-boxGeometry>
+                            <th-octahedronGeometry *ngIf="node.type === 'xgateway'"
+                                [args]="[0.4]"></th-octahedronGeometry>
+                            <th-capsuleGeometry *ngIf="node.type === 'pgateway'"
+                                [args]="[0.25, 0.25, 4, 8]"></th-capsuleGeometry>
+                            <th-torusGeometry *ngIf="node.type === 'terminal'"
+                                [args]="[0.3, 0.05, 8, 24]"></th-torusGeometry>
 
-                <!-- Footprints -->
-                <th-mesh [position]="getFootprintPos(conn, 'source')" [rotation]="[-Math.PI / 2, 0, 0]">
-                    <th-ringGeometry [args]="[0.7, 0.75, 32]"></th-ringGeometry>
-                    <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.2"
-                        [side]="THREE.DoubleSide"></th-meshBasicMaterial>
-                </th-mesh>
-                <th-mesh [position]="getFootprintPos(conn, 'target')" [rotation]="[-Math.PI / 2, 0, 0]">
-                    <th-ringGeometry [args]="[0.7, 0.75, 32]"></th-ringGeometry>
-                    <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.2"
-                        [side]="THREE.DoubleSide"></th-meshBasicMaterial>
-                </th-mesh>
+                            <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
+                                [emissiveIntensity]="10" [wireframe]="true"></th-meshStandardMaterial>
+                        </th-mesh>
+                    </th-group>
+
+                    <!-- Label -->
+                    <th-cSS2DObject [position]="[0, 1.5, 0]">
+                        <div class="floating-label" (click)="onLabelClick($event, node.id)">{{node.name | uppercase}}</div>
+                    </th-cSS2DObject>
+                </th-group>
+
+                <!-- Connections -->
+                <th-group *ngFor="let conn of state.allConnections()">
+                    <!-- Line -->
+                    <th-line [geometry]="getConnGeometry(conn)" [renderOrder]="2">
+                        <th-lineBasicMaterial [color]="COLORS.CYAN" [transparent]="true"
+                            [depthTest]="false" [depthWrite]="false"
+                            [opacity]="(state.selectedConnectionId() === conn.id || (state.interactionMode() === 'delete' && state.hoveredConnectionId() === conn.id)) ? 1.0 : 0.5">
+                        </th-lineBasicMaterial>
+                    </th-line>
+
+                    <!-- Click Target -->
+                    <th-mesh (onPointerOver)="state.hoverConnection(conn.id, true)"
+                        (onPointerOut)="state.hoverConnection(conn.id, false)" (onClick)="onConnClick($event, conn.id)">
+                        <th-tubeGeometry [args]="[getConnPath(conn), 20, 0.3, 8, false]"></th-tubeGeometry>
+                        <th-meshBasicMaterial [transparent]="true" [opacity]="0"
+                            [depthTest]="true"></th-meshBasicMaterial>
+                    </th-mesh>
+
+                    <!-- Arrowhead -->
+                    <th-mesh [position]="getArrowPos(conn)" [quaternion]="getArrowQuat(conn)">
+                        <th-coneGeometry [args]="[0.15, 0.4, 8]"></th-coneGeometry>
+                        <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
+                            [emissiveIntensity]="2"></th-meshStandardMaterial>
+                    </th-mesh>
+
+                    <!-- Footprints -->
+                    <th-mesh [position]="getFootprintPos(conn, 'source')" [rotation]="[-Math.PI / 2, 0, 0]">
+                        <th-ringGeometry [args]="[0.7, 0.75, 32]"></th-ringGeometry>
+                        <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.2"
+                            [side]="THREE.DoubleSide"></th-meshBasicMaterial>
+                    </th-mesh>
+                    <th-mesh [position]="getFootprintPos(conn, 'target')" [rotation]="[-Math.PI / 2, 0, 0]">
+                        <th-ringGeometry [args]="[0.7, 0.75, 32]"></th-ringGeometry>
+                        <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.2"
+                            [side]="THREE.DoubleSide"></th-meshBasicMaterial>
+                    </th-mesh>
+                </th-group>
             </th-group>
 
         </th-scene>
@@ -122,5 +124,10 @@
     <!-- UI Overlay -->
     <app-ui-overlay></app-ui-overlay>
 
-    <button class="reset-btn" (click)="resetView()">Reset View</button>
+    <div class="viewport-buttons">
+      <button class="reset-btn" (click)="resetView()">Reset View</button>
+      <button class="reset-btn vr" [disabled]="xrSupported === false" (click)="toggleVr()">
+        {{ xrActive ? 'Exit VR' : 'Enter VR' }}
+      </button>
+    </div>
 </div>
