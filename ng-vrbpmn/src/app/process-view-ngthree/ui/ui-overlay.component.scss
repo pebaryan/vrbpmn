@@ -28,6 +28,20 @@
   letter-spacing: 1px;
 }
 
+.webxr-banner {
+  position: absolute;
+  top: 30px;
+  left: 240px;
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #ffcc66;
+  background: rgba(10, 20, 30, 0.8);
+  border: 1px solid rgba(255, 204, 102, 0.6);
+  border-radius: 4px;
+  z-index: 15;
+}
+
 #toolbar-left {
   position: absolute;
   top: 50%;
@@ -154,8 +168,29 @@
   }
 }
 
+.prop-input,
+.prop-textarea {
+  width: 100%;
+  background: rgba(5, 10, 16, 0.6);
+  border: 1px solid rgba(0, 242, 255, 0.4);
+  color: #e6fbff;
+  padding: 8px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  outline: none;
+  font-family: inherit;
+}
+
+.prop-textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
 .sidebar-footer {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .action-btn {
@@ -170,6 +205,15 @@
   &:hover {
     background: rgba(0, 242, 255, 0.2);
   }
+}
+
+.export-btn {
+  border-color: rgba(0, 242, 255, 0.7);
+  background: rgba(0, 242, 255, 0.08);
+}
+
+.hidden-file-input {
+  display: none;
 }
 
 #sidebar-toggle {
@@ -205,6 +249,19 @@
     font-size: 12px;
     letter-spacing: 1px;
   }
+}
+
+.statusbar-meta {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.statusbar-alert {
+  color: #ffb84b;
+  opacity: 0.9;
 }
 
 /* Modal Styling */

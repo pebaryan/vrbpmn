@@ -264,7 +264,9 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
   onConnClick(event: any, connId: string) {
     if (this.state.interactionMode() === 'delete') {
       this.state.deleteConnection(connId);
+      return;
     }
+    this.state.selectConnection(connId);
   }
 
   // General Interactions
@@ -272,8 +274,19 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
     if (this.state.interactionMode() === 'add') {
       const intersect = event.intersects?.[0];
       if (intersect && intersect.object.name === 'ground') {
-        this.state.addNode(intersect.point);
+        const point = intersect.point.clone();
+        if (this.state.snapToGrid()) {
+          point.x = Math.round(point.x);
+          point.z = Math.round(point.z);
+          point.y = 0;
+        }
+        this.state.addNode(point);
       }
+      return;
+    }
+    const intersect = event.intersects?.[0];
+    if (intersect && intersect.object.name === 'ground') {
+      this.state.clearSelection();
     }
   }
 
@@ -284,8 +297,10 @@ export class ProcessViewNgThreeComponent implements OnDestroy {
       if (groundIntersect) {
         const pos = groundIntersect.point.clone();
         pos.y = 0;
-        pos.x = Math.round(pos.x);
-        pos.z = Math.round(pos.z);
+        if (this.state.snapToGrid()) {
+          pos.x = Math.round(pos.x);
+          pos.z = Math.round(pos.z);
+        }
         this.state.moveNode(draggedId, pos);
       }
     }

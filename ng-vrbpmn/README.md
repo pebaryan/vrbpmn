@@ -1,6 +1,9 @@
-# NgVrbpmn
+# SPEAR VR BPMN Authoring
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.15.
+Browser-based 3D/VR authoring tool for BPMN process definitions for the SPEAR semantic process engine. Exports BPMN XML + BPMN DI for validation in Camunda Modeler, and provides a desktop fallback alongside WebXR readiness.
+
+## Docs
+- Product requirements: `PRD.md`
 
 ## Development server
 
