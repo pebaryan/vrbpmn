@@ -136,6 +136,9 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
   private prevNodePositions: Map<string, THREE.Vector3> | null = null;
   private readonly snapStep = 0.5;
   private xrSession: any = null;
+  private xrSelectHandler?: (event: any) => void;
+  private xrRenderer: any = null;
+  private nodeObjectMap = new Map<string, THREE.Object3D>();
   public xrSupported: boolean | null = null;
   public xrActive = false;
 
@@ -244,6 +247,9 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
 
   onNodeRender(event: any, nodeId: string) {
     const group = event.object as THREE.Group;
+    if (!this.nodeObjectMap.has(nodeId)) {
+      this.nodeObjectMap.set(nodeId, group);
+    }
     const time = Date.now() * 0.001;
     const isHovered = this.state.hoveredNodeId() === nodeId;
 
@@ -604,6 +610,7 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
         this.state.statusMessage.set('XR renderer not available.');
         return;
       }
+      this.xrRenderer = renderer;
       this.storeCameraState();
       this.applyVrSceneOffset();
       if (renderer.xr) {
@@ -628,6 +635,7 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
       });
       this.xrSession = session;
       this.xrActive = true;
+      this.attachVrSelectHandler(session);
       session.addEventListener('end', () => {
         this.xrActive = false;
         this.xrSession = null;
@@ -635,6 +643,8 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
         this.patchRendererSetSize(renderer, false);
         renderer.xr.enabled = false;
         renderer.setAnimationLoop?.(null);
+        this.detachVrSelectHandler(session);
+        this.xrRenderer = null;
         this.restoreVrSceneOffset();
         this.restoreCameraState();
         this.state.statusMessage.set('Exited VR session.');
@@ -647,11 +657,12 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
   }
 
   private async endVrSession() {
+    let endSession: any = null;
     try {
       const renderer = this.getRenderer();
-      const session = this.xrSession || renderer?.xr?.getSession?.();
-      if (session) {
-        await session.end();
+      endSession = this.xrSession || renderer?.xr?.getSession?.();
+      if (endSession) {
+        await endSession.end();
       } else if (renderer) {
         renderer.xr?.setSession?.(null);
         renderer.xr.enabled = false;
@@ -663,6 +674,8 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     } finally {
       this.xrSession = null;
       this.xrActive = false;
+      if (endSession) this.detachVrSelectHandler(endSession);
+      this.xrRenderer = null;
       this.state.statusMessage.set('Exited VR session.');
     }
   }
@@ -747,5 +760,47 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
       this.state.moveNode(id, pos);
     });
     this.prevNodePositions = null;
+  }
+
+  private attachVrSelectHandler(session: any) {
+    if (this.xrSelectHandler) return;
+    this.xrSelectHandler = () => {
+      const renderer = this.xrRenderer ?? this.getRenderer();
+      if (!renderer) return;
+      const camObj: THREE.Camera | undefined =
+        (this.cameraRef as any)?._objRef ??
+        (this.cameraRef as any)?.object3d ??
+        (this.cameraRef as any)?.threeObject ??
+        this.lastCamera ??
+        undefined;
+      if (!camObj) return;
+      const xrCam = renderer.xr?.getCamera?.(camObj) ?? camObj;
+      const origin = new THREE.Vector3();
+      const direction = new THREE.Vector3();
+      xrCam.getWorldPosition(origin);
+      xrCam.getWorldDirection(direction);
+      this.raycaster.set(origin, direction);
+      const objects = Array.from(this.nodeObjectMap.values());
+      const hits = this.raycaster.intersectObjects(objects, true);
+      if (!hits.length) return;
+      const hit = hits[0];
+      let hitObj: THREE.Object3D | null = hit.object;
+      let entry: [string, THREE.Object3D] | undefined;
+      while (hitObj && !entry) {
+        entry = Array.from(this.nodeObjectMap.entries()).find(([, obj]) => obj === hitObj);
+        hitObj = hitObj.parent ?? null;
+      }
+      if (!entry) return;
+      const [nodeId] = entry;
+      this.state.selectNode(nodeId);
+      this.state.statusMessage.set(`Selected Node ${nodeId}`);
+    };
+    session.addEventListener('select', this.xrSelectHandler);
+  }
+
+  private detachVrSelectHandler(session: any) {
+    if (!this.xrSelectHandler) return;
+    session.removeEventListener('select', this.xrSelectHandler);
+    this.xrSelectHandler = undefined;
   }
 }
