@@ -22,6 +22,8 @@ export interface Node {
   name: string;
   description?: string;
   multiInstance?: MultiInstanceType;
+  parentId?: string | null;
+  bounds?: { width: number; height: number } | null;
 }
 
 export interface Connection {
@@ -86,7 +88,9 @@ export class ProcessStateService {
         position: new THREE.Vector3(i * spacing - startOffset, 0, 0),
         name: `Node ${id}`,
         description: '',
-        multiInstance: null
+        multiInstance: null,
+        parentId: null,
+        bounds: null
       };
       this.nodes.update(nodes => [...nodes, node]);
       this.isDirty.set(true);
@@ -137,7 +141,9 @@ export class ProcessStateService {
       position: position.clone(),
       name: `Node ${id}`,
       description: '',
-      multiInstance: null
+      multiInstance: null,
+      parentId: null,
+      bounds: null
     };
     this.nodes.update(nodes => [...nodes, newNode]);
     this.isDirty.set(true);
@@ -147,13 +153,40 @@ export class ProcessStateService {
   public moveNode(id: string, position: THREE.Vector3) {
     // Replace node with a new position vector to ensure change detection downstream
     let changed = false;
-    this.nodes.update(nodes =>
-      nodes.map(n => {
-        if (n.id !== id) return n;
+    this.nodes.update(nodes => {
+      const target = nodes.find(n => n.id === id);
+      if (!target) return nodes;
+
+      const nextPositions = new Map<string, THREE.Vector3>();
+      nextPositions.set(id, position.clone());
+
+      const hasChildren = nodes.some(n => n.parentId === id);
+      if (hasChildren) {
+        const delta = position.clone().sub(target.position);
+        const childrenByParent = new Map<string, Node[]>();
+        nodes.forEach(node => {
+          if (!node.parentId) return;
+          const list = childrenByParent.get(node.parentId) ?? [];
+          list.push(node);
+          childrenByParent.set(node.parentId, list);
+        });
+
+        const queue = [...(childrenByParent.get(id) ?? [])];
+        while (queue.length) {
+          const child = queue.shift()!;
+          nextPositions.set(child.id, child.position.clone().add(delta));
+          const grandKids = childrenByParent.get(child.id);
+          if (grandKids) queue.push(...grandKids);
+        }
+      }
+
+      return nodes.map(n => {
+        const nextPos = nextPositions.get(n.id);
+        if (!nextPos) return n;
         changed = true;
-        return { ...n, position: position.clone() };
-      })
-    );
+        return { ...n, position: nextPos.clone() };
+      });
+    });
     if (changed) {
       this.isDirty.set(true);
     }
@@ -412,6 +445,8 @@ export class ProcessStateService {
         name: node.name,
         description: node.description ?? '',
         multiInstance: node.multiInstance ?? null,
+        parentId: node.parentId ?? null,
+        bounds: node.bounds ?? null,
         position: {
           x: node.position.x,
           y: node.position.y,
@@ -469,6 +504,8 @@ export class ProcessStateService {
           name?: string;
           description?: string;
           multiInstance?: MultiInstanceType;
+          parentId?: string | null;
+          bounds?: { width: number; height: number } | null;
           position?: { x: number; y: number; z: number };
         }>;
         connections?: Array<{ id: string; sourceId: string; targetId: string }>;
@@ -489,6 +526,8 @@ export class ProcessStateService {
         name: node.name ?? `Node ${node.id}`,
         description: node.description ?? '',
         multiInstance: node.multiInstance ?? null,
+        parentId: node.parentId ?? null,
+        bounds: node.bounds ?? null,
         position: new THREE.Vector3(
           node.position?.x ?? 0,
           node.position?.y ?? 0,
@@ -627,7 +666,31 @@ export class ProcessStateService {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&apos;');
 
-    const nodeXml = nodes.map(node => {
+    const nodeById = new Map(nodes.map(node => [node.id, node]));
+    const childrenByParent = new Map<string, Node[]>();
+    nodes.forEach(node => {
+      if (node.parentId) {
+        const list = childrenByParent.get(node.parentId) ?? [];
+        list.push(node);
+        childrenByParent.set(node.parentId, list);
+      }
+    });
+
+    const connectionByParent = new Map<string, Connection[]>();
+    const topLevelFlows: Connection[] = [];
+    connections.forEach(conn => {
+      const sourceParent = nodeById.get(conn.sourceId)?.parentId ?? null;
+      const targetParent = nodeById.get(conn.targetId)?.parentId ?? null;
+      if (sourceParent && sourceParent === targetParent) {
+        const list = connectionByParent.get(sourceParent) ?? [];
+        list.push(conn);
+        connectionByParent.set(sourceParent, list);
+      } else {
+        topLevelFlows.push(conn);
+      }
+    });
+
+    const buildNodeXml = (node: Node) => {
       const tag = tagForType(node.type);
       const name = escapeXml(node.name || '');
       const documentation = node.description?.trim()
@@ -639,10 +702,27 @@ export class ProcessStateService {
       const messageDef = (node.type === 'messageStart' || node.type === 'messageCatch')
         ? `<bpmn:messageEventDefinition id="MessageEvent_${node.id}" />`
         : '';
-      return `    <${tag} id="${node.id}" name="${name}">${documentation}${messageDef}${multiInstance}</${tag}>`;
+      return { tag, xml: `${documentation}${messageDef}${multiInstance}` };
+    };
+
+    const topLevelNodes = nodes.filter(node => !node.parentId);
+    const nodeXml = topLevelNodes.map(node => {
+      const { tag, xml } = buildNodeXml(node);
+      if (node.type === 'subprocess') {
+        const children = childrenByParent.get(node.id) ?? [];
+        const childNodesXml = children.map(child => {
+          const childInfo = buildNodeXml(child);
+          return `      <${childInfo.tag} id="${child.id}" name="${escapeXml(child.name || '')}">${childInfo.xml}</${childInfo.tag}>`;
+        }).join('\n');
+        const childFlows = (connectionByParent.get(node.id) ?? [])
+          .map(conn => `      <bpmn:sequenceFlow id="${conn.id}" sourceRef="${conn.sourceId}" targetRef="${conn.targetId}" />`)
+          .join('\n');
+        return `    <${tag} id="${node.id}" name="${escapeXml(node.name || '')}">${xml}\n${childNodesXml}\n${childFlows}\n    </${tag}>`;
+      }
+      return `    <${tag} id="${node.id}" name="${escapeXml(node.name || '')}">${xml}</${tag}>`;
     }).join('\n');
 
-    const flowXml = connections.map(conn =>
+    const flowXml = topLevelFlows.map(conn =>
       `    <bpmn:sequenceFlow id="${conn.id}" sourceRef="${conn.sourceId}" targetRef="${conn.targetId}" />`
     ).join('\n');
 
@@ -745,7 +825,8 @@ ${edgesXml}
 
       const elements = selectAll('//bpmn:process/*');
       const nodes: Node[] = [];
-      const scale = 80;
+      const scale = 40;
+      const flipX = -1;
 
       const parseMultiInstance = (el: Element): MultiInstanceType => {
         const mi = el.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'multiInstanceLoopCharacteristics')[0];
@@ -757,10 +838,10 @@ ${edgesXml}
       const hasMessageDef = (el: Element) =>
         el.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'messageEventDefinition').length > 0;
 
-      elements.forEach(el => {
+      const createNode = (el: Element, parentId: string | null) => {
         const tag = el.localName;
         const id = el.getAttribute('id');
-        if (!id) return;
+        if (!id) return null;
 
         let type: NodeType | null = null;
         if (tag === 'startEvent') type = hasMessageDef(el) ? 'messageStart' : 'start';
@@ -772,21 +853,39 @@ ${edgesXml}
         if (tag === 'eventBasedGateway') type = 'eventgateway';
         if (tag === 'subProcess') type = 'subprocess';
         if (tag === 'intermediateCatchEvent') type = hasMessageDef(el) ? 'messageCatch' : null;
-        if (!type) return;
+        if (!type) return null;
 
         const bounds = boundsById.get(id);
         const centerX = bounds ? bounds.x + bounds.w / 2 : 0;
         const centerY = bounds ? bounds.y + bounds.h / 2 : 0;
-        const position = new THREE.Vector3(centerX / scale, 0, -centerY / scale);
+        const position = new THREE.Vector3((centerX * flipX) / scale, 0, -centerY / scale);
 
-        nodes.push({
+        return {
           id,
           type,
           name: el.getAttribute('name') ?? `Node ${id}`,
           description: '',
           multiInstance: parseMultiInstance(el),
-          position
-        });
+          position,
+          parentId,
+          bounds: bounds ? { width: bounds.w / scale, height: bounds.h / scale } : null
+        } as Node;
+      };
+
+      elements.forEach(el => {
+        if (el.localName === 'sequenceFlow') return;
+        if (el.localName === 'subProcess') {
+          const subNode = createNode(el, null);
+          if (subNode) nodes.push(subNode);
+          Array.from(el.children).forEach(child => {
+            if (!(child instanceof Element)) return;
+            const childNode = createNode(child, subNode?.id ?? null);
+            if (childNode) nodes.push(childNode);
+          });
+          return;
+        }
+        const node = createNode(el, null);
+        if (node) nodes.push(node);
       });
 
       const flows = selectAll('//bpmn:sequenceFlow');
@@ -799,15 +898,21 @@ ${edgesXml}
         }))
         .filter(conn => idSet.has(conn.sourceId) && idSet.has(conn.targetId));
 
-      // Recenter positions to keep nodes near origin
+      // Recenter positions around origin to keep nodes in view
       if (nodes.length) {
         const minX = Math.min(...nodes.map(n => n.position.x));
+        const maxX = Math.max(...nodes.map(n => n.position.x));
         const minZ = Math.min(...nodes.map(n => n.position.z));
+        const maxZ = Math.max(...nodes.map(n => n.position.z));
+        const centerX = (minX + maxX) / 2;
+        const centerZ = (minZ + maxZ) / 2;
         nodes.forEach(n => {
-          n.position.x -= minX;
-          n.position.z -= minZ;
+          n.position.x -= centerX;
+          n.position.z -= centerZ;
         });
       }
+
+      this.adjustSubprocessBounds(nodes);
 
       this.nodes.set(nodes);
       this.connections.set(connections);
@@ -825,5 +930,56 @@ ${edgesXml}
 
   private isValidXmlId(id: string): boolean {
     return /^[A-Za-z_][A-Za-z0-9._-]*$/.test(id);
+  }
+
+  private adjustSubprocessBounds(nodes: Node[]) {
+    const childrenByParent = new Map<string, Node[]>();
+    nodes.forEach(node => {
+      if (!node.parentId) return;
+      const list = childrenByParent.get(node.parentId) ?? [];
+      list.push(node);
+      childrenByParent.set(node.parentId, list);
+    });
+
+    const padding = 0.6;
+    nodes.forEach(node => {
+      if (node.type !== 'subprocess') return;
+      const children = childrenByParent.get(node.id) ?? [];
+      if (!children.length) return;
+
+      let maxX = 0;
+      let maxZ = 0;
+      children.forEach(child => {
+        const size = this.getNodeSize(child);
+        const dx = Math.abs(child.position.x - node.position.x) + size.width / 2;
+        const dz = Math.abs(child.position.z - node.position.z) + size.height / 2;
+        maxX = Math.max(maxX, dx);
+        maxZ = Math.max(maxZ, dz);
+      });
+
+      node.bounds = {
+        width: Math.max(2 * maxX + padding * 2, 1),
+        height: Math.max(2 * maxZ + padding * 2, 1)
+      };
+    });
+  }
+
+  private getNodeSize(node: Node): { width: number; height: number } {
+    if (node.bounds) {
+      return { width: node.bounds.width, height: node.bounds.height };
+    }
+    const roundTypes = new Set<NodeType>([
+      'start',
+      'terminal',
+      'xgateway',
+      'pgateway',
+      'eventgateway',
+      'messageStart',
+      'messageCatch'
+    ]);
+    if (roundTypes.has(node.type)) {
+      return { width: 1.5, height: 1.5 };
+    }
+    return { width: 1.2, height: 1.2 };
   }
 }

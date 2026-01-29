@@ -55,7 +55,7 @@ export const CAMERA_CONFIG = {
     ASPECT: 1.5,
     NEAR: 0.1,
     FAR: 1000,
-    POSITION: new THREE.Vector3(0, 10, 20),
+    POSITION: new THREE.Vector3(0, 10, -20),
     LOOK_AT: new THREE.Vector3(0, 0, 0),
 } as const;
 

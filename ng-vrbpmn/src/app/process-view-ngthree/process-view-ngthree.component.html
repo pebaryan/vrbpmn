@@ -33,14 +33,76 @@
                 </th-group>
 
                 <!-- Nodes -->
-                <th-group *ngFor="let node of state.allNodes()" [position]="node.position"
+                <th-group *ngFor="let node of renderNodes()" [position]="node.position"
                     (onPointerOver)="state.hoverNode(node.id, true)" (onPointerOut)="state.hoverNode(node.id, false)"
                     (onPointerDown)="onNodeDown($event, node.id)">
-
                     <!-- Physical Node -->
                     <th-group (onBeforeRender)="onNodeRender($event, node.id)">
+                        <!-- Subprocess Shell (open box) -->
+                        <ng-container *ngIf="node.type === 'subprocess'">
+                            <ng-container *ngIf="getSubprocessShellDims(node, 'outer') as shell">
+                                <th-group>
+                                    <th-mesh [position]="[-shell.width / 2, 0, 0]" [rotation]="[0, Math.PI / 2, 0]">
+                                        <th-planeGeometry [args]="[shell.depth, shell.height]"></th-planeGeometry>
+                                        <th-meshPhysicalMaterial
+                                            [color]="COLORS.DARK_GRAY"
+                                            [metalness]="0.1"
+                                            [roughness]="0.2"
+                                            [transmission]="0.2"
+                                            [transparent]="true"
+                                            [opacity]="0.35"
+                                            [emissive]="COLORS.CYAN"
+                                            [emissiveIntensity]="0.6"
+                                            [side]="THREE.DoubleSide">
+                                        </th-meshPhysicalMaterial>
+                                    </th-mesh>
+                                    <th-mesh [position]="[shell.width / 2, 0, 0]" [rotation]="[0, -Math.PI / 2, 0]">
+                                        <th-planeGeometry [args]="[shell.depth, shell.height]"></th-planeGeometry>
+                                        <th-meshPhysicalMaterial
+                                            [color]="COLORS.DARK_GRAY"
+                                            [metalness]="0.1"
+                                            [roughness]="0.2"
+                                            [transmission]="0.2"
+                                            [transparent]="true"
+                                            [opacity]="0.35"
+                                            [emissive]="COLORS.CYAN"
+                                            [emissiveIntensity]="0.6"
+                                            [side]="THREE.DoubleSide">
+                                        </th-meshPhysicalMaterial>
+                                    </th-mesh>
+                                    <th-mesh [position]="[0, 0, -shell.depth / 2]">
+                                        <th-planeGeometry [args]="[shell.width, shell.height]"></th-planeGeometry>
+                                        <th-meshPhysicalMaterial
+                                            [color]="COLORS.DARK_GRAY"
+                                            [metalness]="0.1"
+                                            [roughness]="0.2"
+                                            [transmission]="0.2"
+                                            [transparent]="true"
+                                            [opacity]="0.35"
+                                            [emissive]="COLORS.CYAN"
+                                            [emissiveIntensity]="0.6"
+                                            [side]="THREE.DoubleSide">
+                                        </th-meshPhysicalMaterial>
+                                    </th-mesh>
+                                    <th-mesh [position]="[0, 0, shell.depth / 2]" [rotation]="[0, Math.PI, 0]">
+                                        <th-planeGeometry [args]="[shell.width, shell.height]"></th-planeGeometry>
+                                        <th-meshPhysicalMaterial
+                                            [color]="COLORS.DARK_GRAY"
+                                            [metalness]="0.1"
+                                            [roughness]="0.2"
+                                            [transmission]="0.2"
+                                            [transparent]="true"
+                                            [opacity]="0.35"
+                                            [emissive]="COLORS.CYAN"
+                                            [emissiveIntensity]="0.6"
+                                            [side]="THREE.DoubleSide">
+                                        </th-meshPhysicalMaterial>
+                                    </th-mesh>
+                                </th-group>
+                            </ng-container>
+                        </ng-container>
                         <!-- Outer Shell -->
-                        <th-mesh>
+                        <th-mesh *ngIf="node.type !== 'subprocess'">
                             <th-cylinderGeometry *ngIf="isRound(node.type)"
                                 [args]="[0.75, 0.75, 1.25, 32]"></th-cylinderGeometry>
                             <th-boxGeometry *ngIf="!isRound(node.type)" [args]="[1.2, 1.2, 1.2]"></th-boxGeometry>
@@ -55,31 +117,162 @@
                             </th-meshPhysicalMaterial>
                         </th-mesh>
 
-                    <!-- Inner Icon -->
-                    <th-mesh>
-                        <th-sphereGeometry *ngIf="node.type === 'start' || node.type === 'messageStart' || node.type === 'messageCatch'" [args]="[0.3, 24, 24]"></th-sphereGeometry>
-                        <th-cylinderGeometry *ngIf="node.type === 'usertask'"
-                            [args]="[0.15, 0.25, 0.5, 32]"></th-cylinderGeometry>
-                        <th-boxGeometry *ngIf="node.type === 'servicetask' || node.type === 'subprocess'" [args]="[0.5, 0.5, 0.5]"></th-boxGeometry>
-                        <th-octahedronGeometry *ngIf="node.type === 'xgateway' || node.type === 'eventgateway'"
-                            [args]="[0.4]"></th-octahedronGeometry>
-                        <th-capsuleGeometry *ngIf="node.type === 'pgateway'"
-                            [args]="[0.25, 0.25, 4, 8]"></th-capsuleGeometry>
-                        <th-torusGeometry *ngIf="node.type === 'terminal'"
-                            [args]="[0.3, 0.05, 8, 24]"></th-torusGeometry>
+                        <!-- Inner Icon -->
+                        <th-mesh>
+                            <th-sphereGeometry *ngIf="node.type === 'start' || node.type === 'messageStart' || node.type === 'messageCatch'" [args]="[0.3, 24, 24]"></th-sphereGeometry>
+                            <th-cylinderGeometry *ngIf="node.type === 'usertask'"
+                                [args]="[0.15, 0.25, 0.5, 32]"></th-cylinderGeometry>
+                            <th-boxGeometry *ngIf="node.type === 'servicetask' || node.type === 'subprocess'" [args]="[0.5, 0.5, 0.5]"></th-boxGeometry>
+                            <th-octahedronGeometry *ngIf="node.type === 'xgateway' || node.type === 'eventgateway'"
+                                [args]="[0.4]"></th-octahedronGeometry>
+                            <th-capsuleGeometry *ngIf="node.type === 'pgateway'"
+                                [args]="[0.25, 0.25, 4, 8]"></th-capsuleGeometry>
+                            <th-torusGeometry *ngIf="node.type === 'terminal'"
+                                [args]="[0.3, 0.05, 8, 24]"></th-torusGeometry>
 
-                        <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
-                            [emissiveIntensity]="10" [wireframe]="true"></th-meshStandardMaterial>
-                    </th-mesh>
+                            <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
+                                [emissiveIntensity]="10" [wireframe]="true"></th-meshStandardMaterial>
+                        </th-mesh>
                     </th-group>
 
-                <!-- Label -->
-                <th-cSS2DObject [position]="[0, 1.5, 0]">
-                    <div class="floating-label" (click)="onLabelClick($event, node.id)">
-                        {{node.type | uppercase}}<span *ngIf="node.multiInstance"> (MI)</span>
-                    </div>
-                </th-cSS2DObject>
+                    <!-- Label -->
+                    <th-cSS2DObject [position]="[0, 1.5, 0]">
+                        <div class="floating-label" (click)="onLabelClick($event, node.id)">
+                            {{node.type | uppercase}}<span *ngIf="node.multiInstance"> (MI)</span>
+                        </div>
+                    </th-cSS2DObject>
+
+                    <!-- Subprocess Footprint -->
+                    <th-line *ngIf="node.type === 'subprocess'"
+                        [geometry]="getSubprocessFootprintGeometry(node)"
+                        [position]="getSubprocessFootprintPos(node)"
+                        [renderOrder]="1">
+                        <th-lineBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.35"
+                            [depthTest]="false" [depthWrite]="false"></th-lineBasicMaterial>
+                    </th-line>
+
+                <!-- Subprocess Children -->
+                <th-group *ngIf="node.type === 'subprocess'">
+                    <th-group *ngFor="let child of childNodesFor(node.id)" [position]="getChildLocalPosition(child, node)"
+                        (onPointerOver)="state.hoverNode(child.id, true)" (onPointerOut)="state.hoverNode(child.id, false)"
+                        (onPointerDown)="onNodeDown($event, child.id)">
+                        <!-- Physical Node -->
+                        <th-group (onBeforeRender)="onNodeRender($event, child.id)">
+                            <!-- Subprocess Shell (open box) -->
+                            <ng-container *ngIf="child.type === 'subprocess'">
+                                <ng-container *ngIf="getSubprocessShellDims(child, 'outer') as shell">
+                                    <th-group>
+                                        <th-mesh [position]="[-shell.width / 2, 0, 0]" [rotation]="[0, Math.PI / 2, 0]">
+                                            <th-planeGeometry [args]="[shell.depth, shell.height]"></th-planeGeometry>
+                                            <th-meshPhysicalMaterial
+                                                [color]="COLORS.DARK_GRAY"
+                                                [metalness]="0.1"
+                                                [roughness]="0.2"
+                                                [transmission]="0.2"
+                                                [transparent]="true"
+                                                [opacity]="0.35"
+                                                [emissive]="COLORS.CYAN"
+                                                [emissiveIntensity]="0.6"
+                                                [side]="THREE.DoubleSide">
+                                            </th-meshPhysicalMaterial>
+                                        </th-mesh>
+                                        <th-mesh [position]="[shell.width / 2, 0, 0]" [rotation]="[0, -Math.PI / 2, 0]">
+                                            <th-planeGeometry [args]="[shell.depth, shell.height]"></th-planeGeometry>
+                                            <th-meshPhysicalMaterial
+                                                [color]="COLORS.DARK_GRAY"
+                                                [metalness]="0.1"
+                                                [roughness]="0.2"
+                                                [transmission]="0.2"
+                                                [transparent]="true"
+                                                [opacity]="0.35"
+                                                [emissive]="COLORS.CYAN"
+                                                [emissiveIntensity]="0.6"
+                                                [side]="THREE.DoubleSide">
+                                            </th-meshPhysicalMaterial>
+                                        </th-mesh>
+                                        <th-mesh [position]="[0, 0, -shell.depth / 2]">
+                                            <th-planeGeometry [args]="[shell.width, shell.height]"></th-planeGeometry>
+                                            <th-meshPhysicalMaterial
+                                                [color]="COLORS.DARK_GRAY"
+                                                [metalness]="0.1"
+                                                [roughness]="0.2"
+                                                [transmission]="0.2"
+                                                [transparent]="true"
+                                                [opacity]="0.35"
+                                                [emissive]="COLORS.CYAN"
+                                                [emissiveIntensity]="0.6"
+                                                [side]="THREE.DoubleSide">
+                                            </th-meshPhysicalMaterial>
+                                        </th-mesh>
+                                        <th-mesh [position]="[0, 0, shell.depth / 2]" [rotation]="[0, Math.PI, 0]">
+                                            <th-planeGeometry [args]="[shell.width, shell.height]"></th-planeGeometry>
+                                            <th-meshPhysicalMaterial
+                                                [color]="COLORS.DARK_GRAY"
+                                                [metalness]="0.1"
+                                                [roughness]="0.2"
+                                                [transmission]="0.2"
+                                                [transparent]="true"
+                                                [opacity]="0.35"
+                                                [emissive]="COLORS.CYAN"
+                                                [emissiveIntensity]="0.6"
+                                                [side]="THREE.DoubleSide">
+                                            </th-meshPhysicalMaterial>
+                                        </th-mesh>
+                                    </th-group>
+                                </ng-container>
+                            </ng-container>
+                            <!-- Outer Shell -->
+                            <th-mesh *ngIf="child.type !== 'subprocess'">
+                                <th-cylinderGeometry *ngIf="isRound(child.type)"
+                                    [args]="[0.75, 0.75, 1.25, 32]"></th-cylinderGeometry>
+                                <th-boxGeometry *ngIf="!isRound(child.type)" [args]="[1.2, 1.2, 1.2]"></th-boxGeometry>
+
+                                <th-meshPhysicalMaterial
+                                    [color]="(state.selectedNodeIds().includes(child.id) || state.hoveredNodeId() === child.id) ? COLORS.HIGHLIGHT : COLORS.BLACK"
+                                    [metalness]="0.1" [roughness]="0.4" [transmission]="0.5" [thickness]="1.0"
+                                    [transparent]="true"
+                                    [emissive]="(state.selectedNodeIds().includes(child.id) || state.hoveredNodeId() === child.id) ? COLORS.CYAN : COLORS.DARK_GRAY"
+                                    [emissiveIntensity]="(state.selectedNodeIds().includes(child.id) || state.hoveredNodeId() === child.id) ? 2 : 1"
+                                    [opacity]="0.7">
+                                </th-meshPhysicalMaterial>
+                            </th-mesh>
+
+                            <!-- Inner Icon -->
+                            <th-mesh>
+                                <th-sphereGeometry *ngIf="child.type === 'start' || child.type === 'messageStart' || child.type === 'messageCatch'" [args]="[0.3, 24, 24]"></th-sphereGeometry>
+                                <th-cylinderGeometry *ngIf="child.type === 'usertask'"
+                                    [args]="[0.15, 0.25, 0.5, 32]"></th-cylinderGeometry>
+                                <th-boxGeometry *ngIf="child.type === 'servicetask' || child.type === 'subprocess'" [args]="[0.5, 0.5, 0.5]"></th-boxGeometry>
+                                <th-octahedronGeometry *ngIf="child.type === 'xgateway' || child.type === 'eventgateway'"
+                                    [args]="[0.4]"></th-octahedronGeometry>
+                                <th-capsuleGeometry *ngIf="child.type === 'pgateway'"
+                                    [args]="[0.25, 0.25, 4, 8]"></th-capsuleGeometry>
+                                <th-torusGeometry *ngIf="child.type === 'terminal'"
+                                    [args]="[0.3, 0.05, 8, 24]"></th-torusGeometry>
+
+                                <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
+                                    [emissiveIntensity]="10" [wireframe]="true"></th-meshStandardMaterial>
+                            </th-mesh>
+                        </th-group>
+
+                        <!-- Label -->
+                        <th-cSS2DObject [position]="[0, 1.5, 0]">
+                            <div class="floating-label" (click)="onLabelClick($event, child.id)">
+                                {{child.type | uppercase}}<span *ngIf="child.multiInstance"> (MI)</span>
+                            </div>
+                        </th-cSS2DObject>
+
+                        <!-- Subprocess Footprint -->
+                        <th-line *ngIf="child.type === 'subprocess'"
+                            [geometry]="getSubprocessFootprintGeometry(child)"
+                            [position]="getSubprocessFootprintPos(child)"
+                            [renderOrder]="1">
+                            <th-lineBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.35"
+                                [depthTest]="false" [depthWrite]="false"></th-lineBasicMaterial>
+                        </th-line>
+                    </th-group>
                 </th-group>
+            </th-group>
 
                 <!-- Connections -->
                 <th-group *ngFor="let conn of state.allConnections()">
@@ -107,12 +300,12 @@
                     </th-mesh>
 
                     <!-- Footprints -->
-                    <th-mesh [position]="getFootprintPos(conn, 'source')" [rotation]="[-Math.PI / 2, 0, 0]">
+                    <th-mesh *ngIf="!isSubprocessNode(conn.sourceId)" [position]="getFootprintPos(conn, 'source')" [rotation]="[-Math.PI / 2, 0, 0]">
                         <th-ringGeometry [args]="[0.7, 0.75, 32]"></th-ringGeometry>
                         <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.2"
                             [side]="THREE.DoubleSide"></th-meshBasicMaterial>
                     </th-mesh>
-                    <th-mesh [position]="getFootprintPos(conn, 'target')" [rotation]="[-Math.PI / 2, 0, 0]">
+                    <th-mesh *ngIf="!isSubprocessNode(conn.targetId)" [position]="getFootprintPos(conn, 'target')" [rotation]="[-Math.PI / 2, 0, 0]">
                         <th-ringGeometry [args]="[0.7, 0.75, 32]"></th-ringGeometry>
                         <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.2"
                             [side]="THREE.DoubleSide"></th-meshBasicMaterial>

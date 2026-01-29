@@ -113,6 +113,8 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     return [-centerX, 0, -centerZ - depth];
   });
 
+  public renderNodes = computed(() => this.state.allNodes().filter(node => !node.parentId));
+
   // ===== Constants (exposed for template) =====
   public readonly COLORS = COLORS;
   public readonly CAMERA_CONFIG = CAMERA_CONFIG;
@@ -139,6 +141,7 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
   private xrSelectHandler?: (event: any) => void;
   private xrRenderer: any = null;
   private nodeObjectMap = new Map<string, THREE.Object3D>();
+  private subprocessFootprintCache = new Map<string, { key: string; geom: THREE.BufferGeometry }>();
   public xrSupported: boolean | null = null;
   public xrActive = false;
 
@@ -208,6 +211,8 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     // Dispose all cached geometries to prevent memory leaks
     this.geometryCache.forEach(geom => geom.dispose());
     this.geometryCache.clear();
+    this.subprocessFootprintCache.forEach(entry => entry.geom.dispose());
+    this.subprocessFootprintCache.clear();
 
     // Dispose grid
     this.grid.geometry?.dispose();
@@ -219,6 +224,62 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
   // Node Helpers
   isRound(type: NodeType) {
     return type === 'start' || type === 'terminal' || type.endsWith('gateway') || type === 'messageStart' || type === 'messageCatch';
+  }
+
+  public childNodesFor(parentId: string) {
+    return this.state.allNodes().filter(node => node.parentId === parentId);
+  }
+
+  public getChildLocalPosition(child: Node, parent: Node): [number, number, number] {
+    return [
+      child.position.x - parent.position.x,
+      child.position.y - parent.position.y,
+      child.position.z - parent.position.z
+    ];
+  }
+
+  public getSubprocessShellDims(node: Node, layer: 'outer' | 'inner'): { width: number; height: number; depth: number } {
+    const baseW = node.bounds?.width ?? 4;
+    const baseD = node.bounds?.height ?? 3;
+    const scale = layer === 'outer' ? 1.05 : 0.95;
+    return {
+      width: baseW * scale,
+      height: 1.6,
+      depth: baseD * scale
+    };
+  }
+
+  public getSubprocessFootprintPos(node: Node): [number, number, number] {
+    return [0, SCENE_CONFIG.GROUND_Y - node.position.y + 0.01, 0];
+  }
+
+  public getSubprocessFootprintGeometry(node: Node): THREE.BufferGeometry {
+    const shell = this.getSubprocessShellDims(node, 'outer');
+    const radius = Math.min(shell.width, shell.depth) * 0.12;
+    const key = `${shell.width.toFixed(3)}:${shell.depth.toFixed(3)}:${radius.toFixed(3)}`;
+    const cached = this.subprocessFootprintCache.get(node.id);
+    if (cached?.key === key) return cached.geom;
+    if (cached) cached.geom.dispose();
+
+    const hw = shell.width / 2;
+    const hd = shell.depth / 2;
+    const r = Math.min(radius, hw, hd);
+    const shape = new THREE.Shape();
+    shape.moveTo(-hw + r, -hd);
+    shape.lineTo(hw - r, -hd);
+    shape.absarc(hw - r, -hd + r, r, -Math.PI / 2, 0, false);
+    shape.lineTo(hw, hd - r);
+    shape.absarc(hw - r, hd - r, r, 0, Math.PI / 2, false);
+    shape.lineTo(-hw + r, hd);
+    shape.absarc(-hw + r, hd - r, r, Math.PI / 2, Math.PI, false);
+    shape.lineTo(-hw, -hd + r);
+    shape.absarc(-hw + r, -hd + r, r, Math.PI, Math.PI * 1.5, false);
+
+    const points = shape.getPoints(48).map(p => new THREE.Vector3(p.x, 0, p.y));
+    if (points.length) points.push(points[0].clone());
+    const geom = new THREE.BufferGeometry().setFromPoints(points);
+    this.subprocessFootprintCache.set(node.id, { key, geom });
+    return geom;
   }
 
   onNodeDown(event: any, nodeId: string) {
@@ -277,8 +338,8 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     const target = nodes.find(n => n.id === conn.targetId);
     if (!source || !target) return new THREE.CurvePath<THREE.Vector3>();
 
-    const a = source.position.clone();
-    const b = target.position.clone();
+    const a = this.getNodeAnchor(source, target.position);
+    const b = this.getNodeAnchor(target, source.position);
     a.y = CONNECTION_CONFIG.Y_POSITION;
     b.y = CONNECTION_CONFIG.Y_POSITION;
 
@@ -301,10 +362,11 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
 
     const signX = diffX >= 0 ? 1 : -1;
     const signZ = diffZ >= 0 ? 1 : -1;
-    const offset = CONNECTION_CONFIG.NODE_OFFSET;
+    const offsetA = this.getNodeOffset(source);
+    const offsetB = this.getNodeOffset(target);
 
-    const startOut = new THREE.Vector3(a.x + signX * offset, a.y, a.z);
-    const targetEntry = new THREE.Vector3(b.x - signX * offset, a.y, b.z - signZ * offset);
+    const startOut = new THREE.Vector3(a.x + signX * offsetA, a.y, a.z);
+    const targetEntry = new THREE.Vector3(b.x - signX * offsetB, a.y, b.z - signZ * offsetB);
     const corner = new THREE.Vector3(targetEntry.x, a.y, startOut.z);
 
     const availableX = Math.max(0, Math.abs(corner.x - startOut.x));
@@ -363,6 +425,10 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     const p = node.position.clone();
     p.y = -1.49;
     return p;
+  }
+
+  public isSubprocessNode(nodeId: string): boolean {
+    return this.state.allNodes().some(node => node.id === nodeId && node.type === 'subprocess');
   }
 
   onConnClick(event: any, connId: string) {
@@ -448,8 +514,9 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     const delta = pos.clone().sub(this.dragStartPoint!);
     delta.y = 0;
     const selectedIds = this.state.selectedNodeIds();
+    const effectiveIds = this.filterDescendants(selectedIds);
     const snap = this.state.snapToGrid();
-    selectedIds.forEach(id => {
+    effectiveIds.forEach(id => {
       const start = this.dragStartPositions.get(id);
       if (!start) return;
       const next = start.clone().add(delta);
@@ -802,5 +869,59 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     if (!this.xrSelectHandler) return;
     session.removeEventListener('select', this.xrSelectHandler);
     this.xrSelectHandler = undefined;
+  }
+
+  private filterDescendants(ids: string[]): string[] {
+    if (ids.length < 2) return ids;
+    const all = this.state.allNodes();
+    const byId = new Map(all.map(node => [node.id, node]));
+    const selected = new Set(ids);
+    return ids.filter(id => {
+      let current = byId.get(id);
+      while (current?.parentId) {
+        if (selected.has(current.parentId)) return false;
+        current = byId.get(current.parentId);
+      }
+      return true;
+    });
+  }
+
+  private getNodeOffset(node: Node): number {
+    if (node.type === 'subprocess') return 0;
+    return CONNECTION_CONFIG.NODE_OFFSET;
+  }
+
+  private getNodeAnchor(node: Node, toward: THREE.Vector3): THREE.Vector3 {
+    if (node.type !== 'subprocess') return node.position.clone();
+    const shell = this.getSubprocessShellDims(node, 'outer');
+    const halfW = shell.width / 2;
+    const halfD = shell.depth / 2;
+    if (halfW <= 0 || halfD <= 0) return node.position.clone();
+
+    const dir = new THREE.Vector3(toward.x - node.position.x, 0, toward.z - node.position.z);
+    const len = dir.length();
+    if (len < 0.0001) return node.position.clone();
+    dir.divideScalar(len);
+
+    const radius = Math.min(halfW, halfD) * 0.12;
+    const tRect = Math.min(
+      Math.abs(dir.x) > 0.0001 ? halfW / Math.abs(dir.x) : Infinity,
+      Math.abs(dir.z) > 0.0001 ? halfD / Math.abs(dir.z) : Infinity
+    );
+    const rectHit = dir.clone().multiplyScalar(tRect);
+    if (Math.abs(rectHit.x) <= halfW - radius || Math.abs(rectHit.z) <= halfD - radius) {
+      return node.position.clone().add(new THREE.Vector3(rectHit.x, 0, rectHit.z));
+    }
+
+    const signX = Math.sign(dir.x) || 1;
+    const signZ = Math.sign(dir.z) || 1;
+    const cx = signX * (halfW - radius);
+    const cz = signZ * (halfD - radius);
+    const dot = dir.x * cx + dir.z * cz;
+    const c = cx * cx + cz * cz - radius * radius;
+    const discriminant = Math.max(0, dot * dot - c);
+    const t = dot - Math.sqrt(discriminant);
+    const cornerHit = dir.clone().multiplyScalar(t);
+    return node.position.clone().add(new THREE.Vector3(cornerHit.x, 0, cornerHit.z));
   }
 }

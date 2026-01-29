@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_ResearchGrant" targetNamespace="http://example.org/vrbpmn/research-grant" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.10.1">
+  <bpmn:process id="Process_ResearchGrant" name="Research Grant Process" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_Submission" name="Submission Received">
+      <bpmn:messageEventDefinition id="MessageEvent_Start_Submission" />
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_InitialScreen" name="Initial Screening" />
+    <bpmn:exclusiveGateway id="Gateway_Eligible" name="Eligible?" />
+    <bpmn:endEvent id="EndEvent_Rejected" name="Rejected" />
+    <bpmn:subProcess id="SubProcess_PeerReview" name="Peer Review">
+      <bpmn:multiInstanceLoopCharacteristics />
+      <bpmn:startEvent id="SubStart" name="Review Start" />
+      <bpmn:userTask id="Task_ReviewProposal" name="Review Proposal" />
+      <bpmn:serviceTask id="Task_AggregateScores" name="Aggregate Scores" />
+      <bpmn:endEvent id="SubEnd" name="Review Complete" />
+      <bpmn:sequenceFlow id="Flow_SubStart_Review" sourceRef="SubStart" targetRef="Task_ReviewProposal" />
+      <bpmn:sequenceFlow id="Flow_Review_Aggregate" sourceRef="Task_ReviewProposal" targetRef="Task_AggregateScores" />
+      <bpmn:sequenceFlow id="Flow_Aggregate_SubEnd" sourceRef="Task_AggregateScores" targetRef="SubEnd" />
+    </bpmn:subProcess>
+    <bpmn:eventBasedGateway id="Gateway_FundingDecision" name="Funding Decision" />
+    <bpmn:intermediateCatchEvent id="Catch_BudgetApproved" name="Budget Approved">
+      <bpmn:messageEventDefinition id="MessageEvent_BudgetApproved" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Catch_BudgetDenied" name="Budget Denied">
+      <bpmn:messageEventDefinition id="MessageEvent_BudgetDenied" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="Task_CreateAwardLetter" name="Create Award Letter" />
+    <bpmn:userTask id="Task_NotifyApplicant" name="Notify Applicant" />
+    <bpmn:endEvent id="EndEvent_Awarded" name="Awarded" />
+    <bpmn:endEvent id="EndEvent_Denied" name="Denied" />
+    <bpmn:sequenceFlow id="Flow_Start_Initial" sourceRef="StartEvent_Submission" targetRef="Task_InitialScreen" />
+    <bpmn:sequenceFlow id="Flow_Initial_Eligible" sourceRef="Task_InitialScreen" targetRef="Gateway_Eligible" />
+    <bpmn:sequenceFlow id="Flow_Eligible_Rejected" sourceRef="Gateway_Eligible" targetRef="EndEvent_Rejected" />
+    <bpmn:sequenceFlow id="Flow_Eligible_PeerReview" sourceRef="Gateway_Eligible" targetRef="SubProcess_PeerReview" />
+    <bpmn:sequenceFlow id="Flow_PeerReview_Decision" sourceRef="SubProcess_PeerReview" targetRef="Gateway_FundingDecision" />
+    <bpmn:sequenceFlow id="Flow_Decision_Approved" sourceRef="Gateway_FundingDecision" targetRef="Catch_BudgetApproved" />
+    <bpmn:sequenceFlow id="Flow_Decision_Denied" sourceRef="Gateway_FundingDecision" targetRef="Catch_BudgetDenied" />
+    <bpmn:sequenceFlow id="Flow_Approved_CreateLetter" sourceRef="Catch_BudgetApproved" targetRef="Task_CreateAwardLetter" />
+    <bpmn:sequenceFlow id="Flow_CreateLetter_Notify" sourceRef="Task_CreateAwardLetter" targetRef="Task_NotifyApplicant" />
+    <bpmn:sequenceFlow id="Flow_Notify_Awarded" sourceRef="Task_NotifyApplicant" targetRef="EndEvent_Awarded" />
+    <bpmn:sequenceFlow id="Flow_Denied_End" sourceRef="Catch_BudgetDenied" targetRef="EndEvent_Denied" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_ResearchGrant">
+    <bpmndi:BPMNPlane id="BPMNPlane_ResearchGrant" bpmnElement="Process_ResearchGrant">
+      <bpmndi:BPMNShape id="Gateway_Eligible_di" bpmnElement="Gateway_Eligible" isMarkerVisible="true">
+        <dc:Bounds x="460" y="355" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="520" y="373" width="42" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Rejected_di" bpmnElement="EndEvent_Rejected">
+        <dc:Bounds x="467" y="612" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="388" y="623" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_FundingDecision_di" bpmnElement="Gateway_FundingDecision">
+        <dc:Bounds x="890" y="355" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="950" y="373" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Catch_BudgetDenied_di" bpmnElement="Catch_BudgetDenied">
+        <dc:Bounds x="970" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="952" y="518" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Catch_BudgetApproved_di" bpmnElement="Catch_BudgetApproved">
+        <dc:Bounds x="970" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="945" y="325" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Denied_di" bpmnElement="EndEvent_Denied">
+        <dc:Bounds x="1402" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1402" y="518" width="35" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreateAwardLetter_di" bpmnElement="Task_CreateAwardLetter">
+        <dc:Bounds x="1058" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyApplicant_di" bpmnElement="Task_NotifyApplicant">
+        <dc:Bounds x="1220" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Awarded_di" bpmnElement="EndEvent_Awarded">
+        <dc:Bounds x="1402" y="262" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1399" y="298" width="43" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_InitialScreen_di" bpmnElement="Task_InitialScreen">
+        <dc:Bounds x="290" y="340" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_Submission_di" bpmnElement="StartEvent_Submission">
+        <dc:Bounds x="162" y="362" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="151" y="418" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubProcess_PeerReview_di" bpmnElement="SubProcess_PeerReview" isExpanded="true">
+        <dc:Bounds x="265" y="80" width="440" height="170" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubStart_di" bpmnElement="SubStart">
+        <dc:Bounds x="285" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="271" y="186" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SubEnd_di" bpmnElement="SubEnd">
+        <dc:Bounds x="637" y="150" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="612" y="193" width="87" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AggregateScores_di" bpmnElement="Task_AggregateScores">
+        <dc:Bounds x="495" y="128" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReviewProposal_di" bpmnElement="Task_ReviewProposal">
+        <dc:Bounds x="355" y="128" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_SubStart_Review_di" bpmnElement="Flow_SubStart_Review">
+        <di:waypoint x="321" y="168" />
+        <di:waypoint x="355" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Aggregate_SubEnd_di" bpmnElement="Flow_Aggregate_SubEnd">
+        <di:waypoint x="595" y="168" />
+        <di:waypoint x="637" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Review_Aggregate_di" bpmnElement="Flow_Review_Aggregate">
+        <di:waypoint x="455" y="168" />
+        <di:waypoint x="495" y="168" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Start_Initial_di" bpmnElement="Flow_Start_Initial">
+        <di:waypoint x="198" y="380" />
+        <di:waypoint x="290" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Initial_Eligible_di" bpmnElement="Flow_Initial_Eligible">
+        <di:waypoint x="390" y="380" />
+        <di:waypoint x="460" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Eligible_Rejected_di" bpmnElement="Flow_Eligible_Rejected">
+        <di:waypoint x="485" y="405" />
+        <di:waypoint x="485" y="612" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Eligible_PeerReview_di" bpmnElement="Flow_Eligible_PeerReview">
+        <di:waypoint x="485" y="355" />
+        <di:waypoint x="485" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PeerReview_Decision_di" bpmnElement="Flow_PeerReview_Decision">
+        <di:waypoint x="705" y="170" />
+        <di:waypoint x="870" y="170" />
+        <di:waypoint x="870" y="380" />
+        <di:waypoint x="890" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Decision_Approved_di" bpmnElement="Flow_Decision_Approved">
+        <di:waypoint x="915" y="355" />
+        <di:waypoint x="915" y="280" />
+        <di:waypoint x="970" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Decision_Denied_di" bpmnElement="Flow_Decision_Denied">
+        <di:waypoint x="915" y="405" />
+        <di:waypoint x="915" y="500" />
+        <di:waypoint x="970" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Approved_CreateLetter_di" bpmnElement="Flow_Approved_CreateLetter">
+        <di:waypoint x="1006" y="280" />
+        <di:waypoint x="1058" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CreateLetter_Notify_di" bpmnElement="Flow_CreateLetter_Notify">
+        <di:waypoint x="1158" y="280" />
+        <di:waypoint x="1220" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Notify_Awarded_di" bpmnElement="Flow_Notify_Awarded">
+        <di:waypoint x="1320" y="280" />
+        <di:waypoint x="1402" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Denied_End_di" bpmnElement="Flow_Denied_End">
+        <di:waypoint x="1006" y="500" />
+        <di:waypoint x="1402" y="500" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
