@@ -1,8 +1,19 @@
 import { Injectable, signal, computed } from '@angular/core';
 import * as THREE from 'three';
 
-export type NodeType = 'start' | 'usertask' | 'servicetask' | 'xgateway' | 'pgateway' | 'terminal';
+export type NodeType =
+  | 'start'
+  | 'usertask'
+  | 'servicetask'
+  | 'xgateway'
+  | 'pgateway'
+  | 'terminal'
+  | 'subprocess'
+  | 'eventgateway'
+  | 'messageStart'
+  | 'messageCatch';
 export type InteractionMode = 'move' | 'add' | 'link' | 'delete';
+export type MultiInstanceType = 'parallel' | 'sequential' | null;
 
 export interface Node {
   id: string;
@@ -10,6 +21,7 @@ export interface Node {
   position: THREE.Vector3;
   name: string;
   description?: string;
+  multiInstance?: MultiInstanceType;
 }
 
 export interface Connection {
@@ -73,7 +85,8 @@ export class ProcessStateService {
         type,
         position: new THREE.Vector3(i * spacing - startOffset, 0, 0),
         name: `Node ${id}`,
-        description: ''
+        description: '',
+        multiInstance: null
       };
       this.nodes.update(nodes => [...nodes, node]);
       this.isDirty.set(true);
@@ -123,7 +136,8 @@ export class ProcessStateService {
       type,
       position: position.clone(),
       name: `Node ${id}`,
-      description: ''
+      description: '',
+      multiInstance: null
     };
     this.nodes.update(nodes => [...nodes, newNode]);
     this.isDirty.set(true);
@@ -183,7 +197,7 @@ export class ProcessStateService {
     }
 
     // Validate connection rules
-    if (targetNode.type === 'start') {
+    if (targetNode.type === 'start' || targetNode.type === 'messageStart') {
       this.statusMessage.set('Start node cannot have incoming connections');
       return;
     }
@@ -301,6 +315,13 @@ export class ProcessStateService {
     this.isDirty.set(true);
   }
 
+  public updateNodeMultiInstance(id: string, multiInstance: MultiInstanceType) {
+    this.nodes.update(nodes => nodes.map(node => (
+      node.id === id ? { ...node, multiInstance } : node
+    )));
+    this.isDirty.set(true);
+  }
+
   public updateNodeId(id: string, nextIdRaw: string) {
     const nextId = nextIdRaw.trim();
     if (!nextId) {
@@ -390,6 +411,7 @@ export class ProcessStateService {
         type: node.type,
         name: node.name,
         description: node.description ?? '',
+        multiInstance: node.multiInstance ?? null,
         position: {
           x: node.position.x,
           y: node.position.y,
@@ -446,6 +468,7 @@ export class ProcessStateService {
           type: NodeType;
           name?: string;
           description?: string;
+          multiInstance?: MultiInstanceType;
           position?: { x: number; y: number; z: number };
         }>;
         connections?: Array<{ id: string; sourceId: string; targetId: string }>;
@@ -465,6 +488,7 @@ export class ProcessStateService {
         type: node.type,
         name: node.name ?? `Node ${node.id}`,
         description: node.description ?? '',
+        multiInstance: node.multiInstance ?? null,
         position: new THREE.Vector3(
           node.position?.x ?? 0,
           node.position?.y ?? 0,
@@ -556,7 +580,11 @@ export class ProcessStateService {
         case 'terminal':
         case 'xgateway':
         case 'pgateway':
+        case 'eventgateway':
+        case 'messageStart':
+        case 'messageCatch':
           return { width: 50, height: 50 };
+        case 'subprocess':
         case 'usertask':
         case 'servicetask':
         default:
@@ -568,16 +596,24 @@ export class ProcessStateService {
       switch (type) {
         case 'start':
           return 'bpmn:startEvent';
+        case 'messageStart':
+          return 'bpmn:startEvent';
         case 'terminal':
           return 'bpmn:endEvent';
         case 'usertask':
           return 'bpmn:userTask';
         case 'servicetask':
           return 'bpmn:serviceTask';
+        case 'subprocess':
+          return 'bpmn:subProcess';
         case 'xgateway':
           return 'bpmn:exclusiveGateway';
         case 'pgateway':
           return 'bpmn:parallelGateway';
+        case 'eventgateway':
+          return 'bpmn:eventBasedGateway';
+        case 'messageCatch':
+          return 'bpmn:intermediateCatchEvent';
         default:
           return 'bpmn:task';
       }
@@ -597,7 +633,13 @@ export class ProcessStateService {
       const documentation = node.description?.trim()
         ? `<bpmn:documentation>${escapeXml(node.description)}</bpmn:documentation>`
         : '';
-      return `    <${tag} id="${node.id}" name="${name}">${documentation}</${tag}>`;
+      const multiInstance = node.multiInstance
+        ? `<bpmn:multiInstanceLoopCharacteristics isSequential="${node.multiInstance === 'sequential'}" />`
+        : '';
+      const messageDef = (node.type === 'messageStart' || node.type === 'messageCatch')
+        ? `<bpmn:messageEventDefinition id="MessageEvent_${node.id}" />`
+        : '';
+      return `    <${tag} id="${node.id}" name="${name}">${documentation}${messageDef}${multiInstance}</${tag}>`;
     }).join('\n');
 
     const flowXml = connections.map(conn =>
@@ -647,6 +689,138 @@ ${edgesXml}
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
+  }
+
+  public importBpmnXml(raw: string): boolean {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(raw, 'application/xml');
+      const parseError = doc.getElementsByTagName('parsererror')[0];
+      if (parseError) {
+        this.statusMessage.set('Invalid BPMN XML.');
+        return false;
+      }
+
+      const nsResolver = (prefix: string | null) => {
+        const nsMap: Record<string, string> = {
+          bpmn: 'http://www.omg.org/spec/BPMN/20100524/MODEL',
+          bpmndi: 'http://www.omg.org/spec/BPMN/20100524/DI',
+          dc: 'http://www.omg.org/spec/DD/20100524/DC',
+          di: 'http://www.omg.org/spec/DD/20100524/DI'
+        };
+        return prefix ? nsMap[prefix] || null : null;
+      };
+
+      const selectAll = (xpath: string) => {
+        const result: Element[] = [];
+        const iterator = doc.evaluate(xpath, doc, nsResolver, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+        let node = iterator.iterateNext();
+        while (node) {
+          if (node instanceof Element) result.push(node);
+          node = iterator.iterateNext();
+        }
+        return result;
+      };
+
+      const processEl = selectAll('//bpmn:process')[0];
+      if (processEl) {
+        const pid = processEl.getAttribute('id');
+        const pname = processEl.getAttribute('name');
+        if (pid && this.isValidXmlId(pid)) this.processId.set(pid);
+        if (pname) this.processName.set(pname);
+      }
+
+      const shapes = selectAll('//bpmndi:BPMNShape');
+      const boundsById = new Map<string, { x: number; y: number; w: number; h: number }>();
+      shapes.forEach(shape => {
+        const bpmnElement = shape.getAttribute('bpmnElement');
+        const bounds = shape.getElementsByTagNameNS('http://www.omg.org/spec/DD/20100524/DC', 'Bounds')[0];
+        if (!bpmnElement || !bounds) return;
+        const x = Number(bounds.getAttribute('x') ?? '0');
+        const y = Number(bounds.getAttribute('y') ?? '0');
+        const w = Number(bounds.getAttribute('width') ?? '0');
+        const h = Number(bounds.getAttribute('height') ?? '0');
+        boundsById.set(bpmnElement, { x, y, w, h });
+      });
+
+      const elements = selectAll('//bpmn:process/*');
+      const nodes: Node[] = [];
+      const scale = 80;
+
+      const parseMultiInstance = (el: Element): MultiInstanceType => {
+        const mi = el.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'multiInstanceLoopCharacteristics')[0];
+        if (!mi) return null;
+        const isSeq = mi.getAttribute('isSequential') === 'true';
+        return isSeq ? 'sequential' : 'parallel';
+      };
+
+      const hasMessageDef = (el: Element) =>
+        el.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'messageEventDefinition').length > 0;
+
+      elements.forEach(el => {
+        const tag = el.localName;
+        const id = el.getAttribute('id');
+        if (!id) return;
+
+        let type: NodeType | null = null;
+        if (tag === 'startEvent') type = hasMessageDef(el) ? 'messageStart' : 'start';
+        if (tag === 'endEvent') type = 'terminal';
+        if (tag === 'userTask') type = 'usertask';
+        if (tag === 'serviceTask') type = 'servicetask';
+        if (tag === 'exclusiveGateway') type = 'xgateway';
+        if (tag === 'parallelGateway') type = 'pgateway';
+        if (tag === 'eventBasedGateway') type = 'eventgateway';
+        if (tag === 'subProcess') type = 'subprocess';
+        if (tag === 'intermediateCatchEvent') type = hasMessageDef(el) ? 'messageCatch' : null;
+        if (!type) return;
+
+        const bounds = boundsById.get(id);
+        const centerX = bounds ? bounds.x + bounds.w / 2 : 0;
+        const centerY = bounds ? bounds.y + bounds.h / 2 : 0;
+        const position = new THREE.Vector3(centerX / scale, 0, -centerY / scale);
+
+        nodes.push({
+          id,
+          type,
+          name: el.getAttribute('name') ?? `Node ${id}`,
+          description: '',
+          multiInstance: parseMultiInstance(el),
+          position
+        });
+      });
+
+      const flows = selectAll('//bpmn:sequenceFlow');
+      const idSet = new Set(nodes.map(n => n.id));
+      const connections = flows
+        .map(flow => ({
+          id: flow.getAttribute('id') || `Flow_${flow.getAttribute('sourceRef')}_${flow.getAttribute('targetRef')}`,
+          sourceId: flow.getAttribute('sourceRef') || '',
+          targetId: flow.getAttribute('targetRef') || ''
+        }))
+        .filter(conn => idSet.has(conn.sourceId) && idSet.has(conn.targetId));
+
+      // Recenter positions to keep nodes near origin
+      if (nodes.length) {
+        const minX = Math.min(...nodes.map(n => n.position.x));
+        const minZ = Math.min(...nodes.map(n => n.position.z));
+        nodes.forEach(n => {
+          n.position.x -= minX;
+          n.position.z -= minZ;
+        });
+      }
+
+      this.nodes.set(nodes);
+      this.connections.set(connections);
+      this.nodeCounter = this.deriveNodeCounter(nodes);
+      this.connectionCounter = this.deriveConnectionCounter(connections);
+      this.isDirty.set(false);
+      this.statusMessage.set('Imported BPMN XML.');
+      return true;
+    } catch (error) {
+      console.error(error);
+      this.statusMessage.set('Failed to import BPMN XML.');
+      return false;
+    }
   }
 
   private isValidXmlId(id: string): boolean {

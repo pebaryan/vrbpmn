@@ -218,7 +218,7 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
 
   // Node Helpers
   isRound(type: NodeType) {
-    return type === 'start' || type === 'terminal' || type.endsWith('gateway');
+    return type === 'start' || type === 'terminal' || type.endsWith('gateway') || type === 'messageStart' || type === 'messageCatch';
   }
 
   onNodeDown(event: any, nodeId: string) {

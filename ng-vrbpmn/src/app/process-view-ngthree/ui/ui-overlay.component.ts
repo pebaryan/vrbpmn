@@ -66,6 +66,14 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
             <label>TYPE</label>
             <div class="prop-val">{{node.type | uppercase}}</div>
           </div>
+          <div class="prop-group" *ngIf="supportsMultiInstance(node.type)">
+            <label>MULTI-INSTANCE</label>
+            <select class="prop-input" [value]="node.multiInstance || 'none'" (change)="onMultiInstanceChange(node.id, $event)">
+              <option value="none">NONE</option>
+              <option value="parallel">PARALLEL</option>
+              <option value="sequential">SEQUENTIAL</option>
+            </select>
+          </div>
           <div class="prop-group">
             <label>NAME</label>
             <input class="prop-input" [value]="node.name" (change)="onNameChange(node.id, $event)" />
@@ -86,9 +94,10 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
         <button class="action-btn" (click)="state.saveToLocalStorage()">QUICK SAVE</button>
         <button class="action-btn" (click)="confirmQuickLoad()">QUICK LOAD</button>
         <button class="action-btn" (click)="saveDiagram()">SAVE JSON</button>
-        <button class="action-btn" (click)="triggerLoad()">LOAD JSON</button>
+        <button class="action-btn" (click)="triggerLoad('json')">LOAD JSON</button>
+        <button class="action-btn" (click)="triggerLoad('bpmn')">LOAD BPMN</button>
         <button class="action-btn export-btn" (click)="exportBpmn()">EXPORT BPMN</button>
-        <input #fileInput class="hidden-file-input" type="file" accept="application/json" (change)="onFileSelected($event)" />
+        <input #fileInput class="hidden-file-input" type="file" accept=".json,.bpmn,.xml,application/json,application/xml,text/xml" (change)="onFileSelected($event)" />
       </div>
     </div>
     <button id="sidebar-toggle" (click)="isSidebarVisible.set(!isSidebarVisible())">⬌</button>
@@ -132,7 +141,18 @@ export class UIOverlayComponent {
   public webxrSupported = signal<boolean | null>(null);
   @ViewChild('fileInput') public fileInput?: ElementRef<HTMLInputElement>;
 
-  public nodeTypes: NodeType[] = ['start', 'usertask', 'servicetask', 'xgateway', 'pgateway', 'terminal'];
+  public nodeTypes: NodeType[] = [
+    'start',
+    'messageStart',
+    'messageCatch',
+    'usertask',
+    'servicetask',
+    'subprocess',
+    'xgateway',
+    'pgateway',
+    'eventgateway',
+    'terminal'
+  ];
 
   public selectedNode = () => this.state.allNodes().find(n => n.id === this.state.selectedNodeId());
 
@@ -159,6 +179,16 @@ export class UIOverlayComponent {
   public onDescriptionChange(id: string, event: Event) {
     const value = (event.target as HTMLTextAreaElement).value;
     this.state.updateNodeDescription(id, value);
+  }
+
+  public onMultiInstanceChange(id: string, event: Event) {
+    const value = (event.target as HTMLSelectElement).value;
+    const next = value === 'none' ? null : (value as any);
+    this.state.updateNodeMultiInstance(id, next);
+  }
+
+  public supportsMultiInstance(type: NodeType): boolean {
+    return type === 'usertask' || type === 'servicetask' || type === 'subprocess';
   }
 
   public onProcessIdChange(event: Event) {
@@ -195,7 +225,7 @@ export class UIOverlayComponent {
     this.state.statusMessage.set('Saved diagram JSON.');
   }
 
-  public triggerLoad() {
+  public triggerLoad(kind: 'json' | 'bpmn') {
     this.fileInput?.nativeElement.click();
   }
 
@@ -214,7 +244,12 @@ export class UIOverlayComponent {
     const file = input.files?.[0];
     if (!file) return;
     file.text().then(text => {
-      this.state.importDiagramJson(text);
+      const looksLikeBpmn = text.includes('<bpmn:definitions') || text.includes('bpmn:process');
+      if (looksLikeBpmn) {
+        this.state.importBpmnXml(text);
+      } else {
+        this.state.importDiagramJson(text);
+      }
       input.value = '';
     });
   }
@@ -241,11 +276,15 @@ export class UIOverlayComponent {
 
     const nodeTypeKeys: Record<string, NodeType> = {
       '1': 'start',
-      '2': 'usertask',
-      '3': 'servicetask',
-      '4': 'xgateway',
-      '5': 'pgateway',
-      '6': 'terminal'
+      '2': 'messageStart',
+      '3': 'messageCatch',
+      '4': 'usertask',
+      '5': 'servicetask',
+      '6': 'subprocess',
+      '7': 'xgateway',
+      '8': 'pgateway',
+      '9': 'eventgateway',
+      '0': 'terminal'
     };
     if (nodeTypeKeys[key]) {
       this.state.setMode('add');

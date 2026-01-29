@@ -55,28 +55,30 @@
                             </th-meshPhysicalMaterial>
                         </th-mesh>
 
-                        <!-- Inner Icon -->
-                        <th-mesh>
-                            <th-sphereGeometry *ngIf="node.type === 'start'" [args]="[0.3, 24, 24]"></th-sphereGeometry>
-                            <th-cylinderGeometry *ngIf="node.type === 'usertask'"
-                                [args]="[0.15, 0.25, 0.5, 32]"></th-cylinderGeometry>
-                            <th-boxGeometry *ngIf="node.type === 'servicetask'" [args]="[0.5, 0.5, 0.5]"></th-boxGeometry>
-                            <th-octahedronGeometry *ngIf="node.type === 'xgateway'"
-                                [args]="[0.4]"></th-octahedronGeometry>
-                            <th-capsuleGeometry *ngIf="node.type === 'pgateway'"
-                                [args]="[0.25, 0.25, 4, 8]"></th-capsuleGeometry>
-                            <th-torusGeometry *ngIf="node.type === 'terminal'"
-                                [args]="[0.3, 0.05, 8, 24]"></th-torusGeometry>
+                    <!-- Inner Icon -->
+                    <th-mesh>
+                        <th-sphereGeometry *ngIf="node.type === 'start' || node.type === 'messageStart' || node.type === 'messageCatch'" [args]="[0.3, 24, 24]"></th-sphereGeometry>
+                        <th-cylinderGeometry *ngIf="node.type === 'usertask'"
+                            [args]="[0.15, 0.25, 0.5, 32]"></th-cylinderGeometry>
+                        <th-boxGeometry *ngIf="node.type === 'servicetask' || node.type === 'subprocess'" [args]="[0.5, 0.5, 0.5]"></th-boxGeometry>
+                        <th-octahedronGeometry *ngIf="node.type === 'xgateway' || node.type === 'eventgateway'"
+                            [args]="[0.4]"></th-octahedronGeometry>
+                        <th-capsuleGeometry *ngIf="node.type === 'pgateway'"
+                            [args]="[0.25, 0.25, 4, 8]"></th-capsuleGeometry>
+                        <th-torusGeometry *ngIf="node.type === 'terminal'"
+                            [args]="[0.3, 0.05, 8, 24]"></th-torusGeometry>
 
-                            <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
-                                [emissiveIntensity]="10" [wireframe]="true"></th-meshStandardMaterial>
-                        </th-mesh>
+                        <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
+                            [emissiveIntensity]="10" [wireframe]="true"></th-meshStandardMaterial>
+                    </th-mesh>
                     </th-group>
 
-                    <!-- Label -->
-                    <th-cSS2DObject [position]="[0, 1.5, 0]">
-                        <div class="floating-label" (click)="onLabelClick($event, node.id)">{{node.name | uppercase}}</div>
-                    </th-cSS2DObject>
+                <!-- Label -->
+                <th-cSS2DObject [position]="[0, 1.5, 0]">
+                    <div class="floating-label" (click)="onLabelClick($event, node.id)">
+                        {{node.type | uppercase}}<span *ngIf="node.multiInstance"> (MI)</span>
+                    </div>
+                </th-cSS2DObject>
                 </th-group>
 
                 <!-- Connections -->
