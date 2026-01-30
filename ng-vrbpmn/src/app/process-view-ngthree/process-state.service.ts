@@ -30,6 +30,7 @@ export interface Connection {
   id: string;
   sourceId: string;
   targetId: string;
+  waypoints?: Array<{ x: number; z: number }>;
 }
 
 @Injectable({
@@ -153,12 +154,19 @@ export class ProcessStateService {
   public moveNode(id: string, position: THREE.Vector3) {
     // Replace node with a new position vector to ensure change detection downstream
     let changed = false;
+    const movedIds = new Set<string>();
+    const movedDeltas = new Map<string, { x: number; z: number }>();
     this.nodes.update(nodes => {
       const target = nodes.find(n => n.id === id);
       if (!target) return nodes;
 
       const nextPositions = new Map<string, THREE.Vector3>();
       nextPositions.set(id, position.clone());
+      movedIds.add(id);
+      movedDeltas.set(id, {
+        x: position.x - target.position.x,
+        z: position.z - target.position.z
+      });
 
       const hasChildren = nodes.some(n => n.parentId === id);
       if (hasChildren) {
@@ -175,6 +183,8 @@ export class ProcessStateService {
         while (queue.length) {
           const child = queue.shift()!;
           nextPositions.set(child.id, child.position.clone().add(delta));
+          movedIds.add(child.id);
+          movedDeltas.set(child.id, { x: delta.x, z: delta.z });
           const grandKids = childrenByParent.get(child.id);
           if (grandKids) queue.push(...grandKids);
         }
@@ -189,6 +199,66 @@ export class ProcessStateService {
     });
     if (changed) {
       this.isDirty.set(true);
+    }
+
+    if (movedIds.size > 0) {
+      const nearlyEqual = (a: number, b: number) => Math.abs(a - b) < 1e-4;
+      const deltasEqual = (a: { x: number; z: number }, b: { x: number; z: number }) =>
+        nearlyEqual(a.x, b.x) && nearlyEqual(a.z, b.z);
+      const axisFrom = (a: { x: number; z: number }, b: { x: number; z: number }) => {
+        if (nearlyEqual(a.x, b.x)) return 'z';
+        if (nearlyEqual(a.z, b.z)) return 'x';
+        return null;
+      };
+      const shiftStart = (original: Array<{ x: number; z: number }>, points: Array<{ x: number; z: number }>, delta: { x: number; z: number }) => {
+        if (!points.length) return;
+        const base = original[0];
+        const axis = original.length > 1 ? axisFrom(original[0], original[1]) : null;
+        points[0] = { x: points[0].x + delta.x, z: points[0].z + delta.z };
+        if (!axis) return;
+        for (let i = 1; i < points.length; i += 1) {
+          const p = original[i];
+          if (axis === 'x' && !nearlyEqual(p.z, base.z)) break;
+          if (axis === 'z' && !nearlyEqual(p.x, base.x)) break;
+          points[i] = { x: points[i].x + delta.x, z: points[i].z + delta.z };
+        }
+      };
+      const shiftEnd = (original: Array<{ x: number; z: number }>, points: Array<{ x: number; z: number }>, delta: { x: number; z: number }) => {
+        if (!points.length) return;
+        const lastIndex = points.length - 1;
+        const base = original[lastIndex];
+        const axis = original.length > 1 ? axisFrom(original[lastIndex - 1], original[lastIndex]) : null;
+        points[lastIndex] = { x: points[lastIndex].x + delta.x, z: points[lastIndex].z + delta.z };
+        if (!axis) return;
+        for (let i = lastIndex - 1; i >= 0; i -= 1) {
+          const p = original[i];
+          if (axis === 'x' && !nearlyEqual(p.z, base.z)) break;
+          if (axis === 'z' && !nearlyEqual(p.x, base.x)) break;
+          points[i] = { x: points[i].x + delta.x, z: points[i].z + delta.z };
+        }
+      };
+
+      this.connections.update(conns =>
+        conns.map(conn => {
+          const sourceDelta = movedDeltas.get(conn.sourceId);
+          const targetDelta = movedDeltas.get(conn.targetId);
+          if (!sourceDelta && !targetDelta) return conn;
+          if (!conn.waypoints || conn.waypoints.length < 2) {
+            return { ...conn, waypoints: undefined };
+          }
+          const original = conn.waypoints.map(point => ({ x: point.x, z: point.z }));
+          const next = conn.waypoints.map(point => ({ x: point.x, z: point.z }));
+          if (sourceDelta && targetDelta && deltasEqual(sourceDelta, targetDelta)) {
+            return {
+              ...conn,
+              waypoints: next.map(point => ({ x: point.x + sourceDelta.x, z: point.z + sourceDelta.z }))
+            };
+          }
+          if (sourceDelta) shiftStart(original, next, sourceDelta);
+          if (targetDelta) shiftEnd(original, next, targetDelta);
+          return { ...conn, waypoints: next };
+        })
+      );
     }
   }
 
@@ -456,7 +526,8 @@ export class ProcessStateService {
       connections: this.connections().map(conn => ({
         id: conn.id,
         sourceId: conn.sourceId,
-        targetId: conn.targetId
+        targetId: conn.targetId,
+        waypoints: conn.waypoints?.map(point => ({ x: point.x, z: point.z })) ?? null
       }))
     };
     return JSON.stringify(payload, null, 2);
@@ -508,7 +579,7 @@ export class ProcessStateService {
           bounds?: { width: number; height: number } | null;
           position?: { x: number; y: number; z: number };
         }>;
-        connections?: Array<{ id: string; sourceId: string; targetId: string }>;
+        connections?: Array<{ id: string; sourceId: string; targetId: string; waypoints?: Array<{ x: number; z: number }> | null }>;
       };
 
       if (!data.nodes || !Array.isArray(data.nodes)) {
@@ -541,7 +612,8 @@ export class ProcessStateService {
         .map(conn => ({
           id: conn.id,
           sourceId: conn.sourceId,
-          targetId: conn.targetId
+          targetId: conn.targetId,
+          waypoints: conn.waypoints?.map(point => ({ x: point.x, z: point.z })) ?? undefined
         }));
 
       this.nodes.set(nodes);
@@ -888,27 +960,61 @@ ${edgesXml}
         if (node) nodes.push(node);
       });
 
+      const edgeWaypoints = new Map<string, Array<{ x: number; z: number }>>();
+      const edges = selectAll('//bpmndi:BPMNEdge');
+      edges.forEach(edge => {
+        const flowId = edge.getAttribute('bpmnElement');
+        if (!flowId) return;
+        const waypointEls = edge.getElementsByTagNameNS('http://www.omg.org/spec/DD/20100524/DI', 'waypoint');
+        const points: Array<{ x: number; z: number }> = [];
+        Array.from(waypointEls).forEach(waypoint => {
+          const xAttr = waypoint.getAttribute('x');
+          const yAttr = waypoint.getAttribute('y');
+          if (xAttr === null || yAttr === null) return;
+          const rawX = Number(xAttr);
+          const rawY = Number(yAttr);
+          if (Number.isNaN(rawX) || Number.isNaN(rawY)) return;
+          points.push({ x: (rawX * flipX) / scale, z: -rawY / scale });
+        });
+        if (points.length >= 2) {
+          edgeWaypoints.set(flowId, points);
+        }
+      });
+
       const flows = selectAll('//bpmn:sequenceFlow');
       const idSet = new Set(nodes.map(n => n.id));
       const connections = flows
         .map(flow => ({
           id: flow.getAttribute('id') || `Flow_${flow.getAttribute('sourceRef')}_${flow.getAttribute('targetRef')}`,
           sourceId: flow.getAttribute('sourceRef') || '',
-          targetId: flow.getAttribute('targetRef') || ''
+          targetId: flow.getAttribute('targetRef') || '',
+          waypoints: edgeWaypoints.get(flow.getAttribute('id') || '') ?? undefined
         }))
         .filter(conn => idSet.has(conn.sourceId) && idSet.has(conn.targetId));
 
       // Recenter positions around origin to keep nodes in view
+      let centerX = 0;
+      let centerZ = 0;
       if (nodes.length) {
         const minX = Math.min(...nodes.map(n => n.position.x));
         const maxX = Math.max(...nodes.map(n => n.position.x));
         const minZ = Math.min(...nodes.map(n => n.position.z));
         const maxZ = Math.max(...nodes.map(n => n.position.z));
-        const centerX = (minX + maxX) / 2;
-        const centerZ = (minZ + maxZ) / 2;
+        centerX = (minX + maxX) / 2;
+        centerZ = (minZ + maxZ) / 2;
         nodes.forEach(n => {
           n.position.x -= centerX;
           n.position.z -= centerZ;
+        });
+      }
+
+      if (centerX !== 0 || centerZ !== 0) {
+        connections.forEach(conn => {
+          if (!conn.waypoints) return;
+          conn.waypoints = conn.waypoints.map(point => ({
+            x: point.x - centerX,
+            z: point.z - centerZ
+          }));
         });
       }
 

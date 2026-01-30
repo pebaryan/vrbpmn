@@ -255,7 +255,7 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
 
   public getSubprocessFootprintGeometry(node: Node): THREE.BufferGeometry {
     const shell = this.getSubprocessShellDims(node, 'outer');
-    const radius = Math.min(shell.width, shell.depth) * 0.12;
+    const radius = this.getSubprocessCornerRadius(shell.width, shell.depth);
     const key = `${shell.width.toFixed(3)}:${shell.depth.toFixed(3)}:${radius.toFixed(3)}`;
     const cached = this.subprocessFootprintCache.get(node.id);
     if (cached?.key === key) return cached.geom;
@@ -338,57 +338,61 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     const target = nodes.find(n => n.id === conn.targetId);
     if (!source || !target) return new THREE.CurvePath<THREE.Vector3>();
 
+    if (conn.waypoints && conn.waypoints.length >= 2) {
+      const points = conn.waypoints.map(point => new THREE.Vector3(point.x, CONNECTION_CONFIG.Y_POSITION, point.z));
+      if (points.length >= 2) {
+        const eps = 1e-4;
+        let startIdx = 1;
+        while (startIdx < points.length && points[startIdx].distanceTo(points[0]) < eps) {
+          startIdx += 1;
+        }
+        let endIdx = points.length - 2;
+        while (endIdx >= 0 && points[endIdx].distanceTo(points[points.length - 1]) < eps) {
+          endIdx -= 1;
+        }
+        const startRef = points[startIdx] ?? points[points.length - 1];
+        const endRef = points[endIdx] ?? points[0];
+        const startAnchor = this.getWaypointAnchor(source, startRef);
+        const endAnchor = this.getWaypointAnchor(target, endRef);
+        points[0] = new THREE.Vector3(startAnchor.x, CONNECTION_CONFIG.Y_POSITION, startAnchor.z);
+        points[points.length - 1] = new THREE.Vector3(endAnchor.x, CONNECTION_CONFIG.Y_POSITION, endAnchor.z);
+      }
+      const orthoPoints = this.orthogonalizePath(points);
+      return this.buildRoundedPath(orthoPoints, CONNECTION_CONFIG.CORNER_RADIUS);
+    }
+
     const a = this.getNodeAnchor(source, target.position);
     const b = this.getNodeAnchor(target, source.position);
     a.y = CONNECTION_CONFIG.Y_POSITION;
     b.y = CONNECTION_CONFIG.Y_POSITION;
 
     const path = new THREE.CurvePath<THREE.Vector3>();
-    const diffX = b.x - a.x;
-    const diffZ = b.z - a.z;
-
-    const absX = Math.abs(diffX);
-    const absZ = Math.abs(diffZ);
-
-    // Straight line for very close nodes
-    if (absX < CONNECTION_CONFIG.MIN_DISTANCE_FOR_CORNER || absZ < CONNECTION_CONFIG.MIN_DISTANCE_FOR_CORNER) {
-      const dir = b.clone().sub(a).normalize();
-      path.add(new THREE.LineCurve3(
-        a.clone().add(dir.clone().multiplyScalar(CONNECTION_CONFIG.NODE_OFFSET)),
-        b.clone().sub(dir.clone().multiplyScalar(CONNECTION_CONFIG.NODE_OFFSET))
-      ));
-      return path;
-    }
-
-    const signX = diffX >= 0 ? 1 : -1;
-    const signZ = diffZ >= 0 ? 1 : -1;
     const offsetA = this.getNodeOffset(source);
     const offsetB = this.getNodeOffset(target);
 
-    const startOut = new THREE.Vector3(a.x + signX * offsetA, a.y, a.z);
-    const targetEntry = new THREE.Vector3(b.x - signX * offsetB, a.y, b.z - signZ * offsetB);
-    const corner = new THREE.Vector3(targetEntry.x, a.y, startOut.z);
+    const { startAnchor, startOutDir } = this.getSideAnchorAndDir(source, target.position, offsetA);
+    const { startAnchor: endAnchor, startOutDir: endDir } = this.getSideAnchorAndDir(target, source.position, offsetB);
 
-    const availableX = Math.max(0, Math.abs(corner.x - startOut.x));
-    const availableZ = Math.max(0, Math.abs(targetEntry.z - corner.z));
-    const maxRadius = Math.min(CONNECTION_CONFIG.CORNER_RADIUS, availableX, availableZ);
+    const startOut = this.getFootprintHit(source, startAnchor.clone().add(startOutDir.clone().setLength(offsetA))) ?? startAnchor.clone().add(startOutDir.clone().setLength(offsetA));
+    const endIn = this.getFootprintHit(target, startOut) ?? endAnchor.clone().add(endDir.clone().setLength(-offsetB));
+    startOut.y = CONNECTION_CONFIG.Y_POSITION;
+    endIn.y = CONNECTION_CONFIG.Y_POSITION;
 
-    if (maxRadius <= 0.0001) {
-      // Fallback to hard L
-      path.add(new THREE.LineCurve3(startOut, corner));
-      path.add(new THREE.LineCurve3(corner, targetEntry));
-      return path;
+    const midPoints: THREE.Vector3[] = [];
+    if (Math.abs(startOutDir.x) > 0) {
+      midPoints.push(new THREE.Vector3(endIn.x, CONNECTION_CONFIG.Y_POSITION, startOut.z));
+    } else {
+      midPoints.push(new THREE.Vector3(startOut.x, CONNECTION_CONFIG.Y_POSITION, endIn.z));
+    }
+    if (Math.abs(startOutDir.x) > 0 && Math.abs(endDir.x) > 0 && Math.abs(midPoints[0].z - endIn.z) > 1e-4) {
+      midPoints.push(new THREE.Vector3(endIn.x, CONNECTION_CONFIG.Y_POSITION, endIn.z));
+    } else if (Math.abs(startOutDir.z) > 0 && Math.abs(endDir.z) > 0 && Math.abs(midPoints[0].x - endIn.x) > 1e-4) {
+      midPoints.push(new THREE.Vector3(endIn.x, CONNECTION_CONFIG.Y_POSITION, endIn.z));
     }
 
-    const preCorner = corner.clone().add(new THREE.Vector3(-signX * maxRadius, 0, 0));
-    const postCorner = corner.clone().add(new THREE.Vector3(0, 0, signZ * maxRadius));
-
-    // First leg to rounded corner entry
-    path.add(new THREE.LineCurve3(startOut, preCorner));
-    // Rounded corner
-    path.add(new THREE.QuadraticBezierCurve3(preCorner, corner, postCorner));
-    // Second leg to target entry
-    path.add(new THREE.LineCurve3(postCorner, targetEntry));
+    const pts = [startOut, ...midPoints, endIn];
+    const elbowPath = this.buildRoundedPath(pts, CONNECTION_CONFIG.CORNER_RADIUS);
+    elbowPath.curves.forEach(curve => path.add(curve));
 
     return path;
   }
@@ -892,36 +896,205 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
   }
 
   private getNodeAnchor(node: Node, toward: THREE.Vector3): THREE.Vector3 {
-    if (node.type !== 'subprocess') return node.position.clone();
-    const shell = this.getSubprocessShellDims(node, 'outer');
-    const halfW = shell.width / 2;
-    const halfD = shell.depth / 2;
-    if (halfW <= 0 || halfD <= 0) return node.position.clone();
+    const { halfW, halfD, radius } = this.getNodeHalfExtents(node);
+    const to = new THREE.Vector3(toward.x - node.position.x, 0, toward.z - node.position.z);
+    const absDx = Math.abs(to.x);
+    const absDz = Math.abs(to.z);
+    let normal: THREE.Vector3;
+    if (absDx >= absDz) {
+      normal = to.x >= 0 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(-1, 0, 0);
+    } else {
+      normal = to.z >= 0 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 0, -1);
+    }
+    const anchor = node.position.clone().add(new THREE.Vector3(normal.x * halfW, 0, normal.z * halfD));
+    if (node.type === 'subprocess') return anchor;
+    // For round-ish nodes, push slightly outward to clear the body
+    return anchor.add(normal.clone().setLength(radius * 0.15));
+  }
 
-    const dir = new THREE.Vector3(toward.x - node.position.x, 0, toward.z - node.position.z);
+  private getWaypointAnchor(node: Node, toward: THREE.Vector3): THREE.Vector3 {
+    if (node.type === 'subprocess') {
+      return this.getNodeAnchor(node, toward);
+    }
+    const dir = toward.clone().sub(node.position);
     const len = dir.length();
     if (len < 0.0001) return node.position.clone();
     dir.divideScalar(len);
+    const anchor = node.position.clone().add(dir.multiplyScalar(this.getNodeOffset(node)));
+    anchor.y = CONNECTION_CONFIG.Y_POSITION;
+    return anchor;
+  }
 
-    const radius = Math.min(halfW, halfD) * 0.12;
-    const tRect = Math.min(
-      Math.abs(dir.x) > 0.0001 ? halfW / Math.abs(dir.x) : Infinity,
-      Math.abs(dir.z) > 0.0001 ? halfD / Math.abs(dir.z) : Infinity
-    );
-    const rectHit = dir.clone().multiplyScalar(tRect);
-    if (Math.abs(rectHit.x) <= halfW - radius || Math.abs(rectHit.z) <= halfD - radius) {
-      return node.position.clone().add(new THREE.Vector3(rectHit.x, 0, rectHit.z));
+  private buildRoundedPath(points: THREE.Vector3[], radius: number): THREE.CurvePath<THREE.Vector3> {
+    const path = new THREE.CurvePath<THREE.Vector3>();
+    if (points.length < 2) return path;
+    // Force all points to the connector plane
+    points = points.map(p => new THREE.Vector3(p.x, CONNECTION_CONFIG.Y_POSITION, p.z));
+    if (points.length === 2 || radius <= 0) {
+      path.add(new THREE.LineCurve3(points[0], points[points.length - 1]));
+      return path;
     }
 
-    const signX = Math.sign(dir.x) || 1;
-    const signZ = Math.sign(dir.z) || 1;
-    const cx = signX * (halfW - radius);
-    const cz = signZ * (halfD - radius);
-    const dot = dir.x * cx + dir.z * cz;
-    const c = cx * cx + cz * cz - radius * radius;
-    const discriminant = Math.max(0, dot * dot - c);
-    const t = dot - Math.sqrt(discriminant);
-    const cornerHit = dir.clone().multiplyScalar(t);
-    return node.position.clone().add(new THREE.Vector3(cornerHit.x, 0, cornerHit.z));
+    let current = points[0].clone();
+    for (let i = 1; i < points.length - 1; i += 1) {
+      const prev = points[i - 1];
+      const point = points[i];
+      const next = points[i + 1];
+
+      const dirIn = point.clone().sub(prev);
+      const dirOut = next.clone().sub(point);
+      const lenIn = dirIn.length();
+      const lenOut = dirOut.length();
+      if (lenIn < 1e-6 || lenOut < 1e-6) {
+        continue;
+      }
+
+      dirIn.divideScalar(lenIn);
+      dirOut.divideScalar(lenOut);
+      const dot = dirIn.dot(dirOut);
+      if (Math.abs(dot) > 0.999) {
+        path.add(new THREE.LineCurve3(current, point));
+        current = point.clone();
+        continue;
+      }
+
+      const r = Math.min(radius, lenIn * 0.5, lenOut * 0.5);
+      const entry = point.clone().sub(dirIn.clone().multiplyScalar(r));
+      const exit = point.clone().add(dirOut.clone().multiplyScalar(r));
+      path.add(new THREE.LineCurve3(current, entry));
+      path.add(new THREE.QuadraticBezierCurve3(entry, point, exit));
+      current = exit.clone();
+    }
+    path.add(new THREE.LineCurve3(current, points[points.length - 1]));
+    return path;
+  }
+
+  private orthogonalizePath(points: THREE.Vector3[]): THREE.Vector3[] {
+    if (points.length <= 2) return points;
+    const result: THREE.Vector3[] = [points[0].clone()];
+    for (let i = 1; i < points.length; i += 1) {
+      const next = points[i];
+      const prev = result[result.length - 1];
+      if (Math.abs(next.x - prev.x) < 1e-4 || Math.abs(next.z - prev.z) < 1e-4) {
+        result.push(next.clone());
+        continue;
+      }
+      const prevPrev = result.length >= 2 ? result[result.length - 2] : null;
+      let elbow: THREE.Vector3;
+      if (prevPrev) {
+        const dxPrev = prev.x - prevPrev.x;
+        const dzPrev = prev.z - prevPrev.z;
+        if (Math.abs(dxPrev) >= Math.abs(dzPrev)) {
+          elbow = new THREE.Vector3(next.x, prev.y, prev.z);
+        } else {
+          elbow = new THREE.Vector3(prev.x, prev.y, next.z);
+        }
+      } else {
+        if (Math.abs(next.x - prev.x) >= Math.abs(next.z - prev.z)) {
+          elbow = new THREE.Vector3(next.x, prev.y, prev.z);
+        } else {
+          elbow = new THREE.Vector3(prev.x, prev.y, next.z);
+        }
+      }
+      if (elbow.distanceTo(prev) > 1e-4) {
+        result.push(elbow);
+      }
+      result.push(next.clone());
+    }
+
+    const simplified: THREE.Vector3[] = [];
+    for (let i = 0; i < result.length; i += 1) {
+      const p = result[i];
+      const prev = simplified[simplified.length - 1];
+      if (!prev || p.distanceTo(prev) > 1e-4) {
+        simplified.push(p);
+      }
+    }
+
+    const cleaned: THREE.Vector3[] = [];
+    for (let i = 0; i < simplified.length; i += 1) {
+      const p = simplified[i];
+      const prev = cleaned[cleaned.length - 1];
+      const next = simplified[i + 1];
+      if (!prev || !next) {
+        cleaned.push(p);
+        continue;
+      }
+      const collinearX = Math.abs(prev.x - p.x) < 1e-4 && Math.abs(p.x - next.x) < 1e-4;
+      const collinearZ = Math.abs(prev.z - p.z) < 1e-4 && Math.abs(p.z - next.z) < 1e-4;
+      if (collinearX || collinearZ) {
+        continue;
+      }
+      cleaned.push(p);
+    }
+    return cleaned;
+  }
+
+  private getSubprocessCornerRadius(width: number, depth: number): number {
+    return Math.min(width, depth) * 0.12;
+  }
+
+  private getNodeHalfExtents(node: Node): { halfW: number; halfD: number; radius: number } {
+    if (node.type === 'subprocess') {
+      const shell = this.getSubprocessShellDims(node, 'outer');
+      return { halfW: shell.width / 2, halfD: shell.depth / 2, radius: Math.min(shell.width, shell.depth) * 0.5 };
+    }
+    const square = 1.2;
+    const round = 0.75 * 2; // diameter
+    const useRound = this.isRound(node.type);
+    const size = useRound ? round : square;
+    const half = size / 2;
+    return { halfW: half, halfD: half, radius: size * 0.5 };
+  }
+
+  private getSideAnchorAndDir(node: Node, toward: THREE.Vector3, offset: number): { startAnchor: THREE.Vector3; startOutDir: THREE.Vector3 } {
+    const { halfW, halfD } = this.getNodeHalfExtents(node);
+    const to = new THREE.Vector3(toward.x - node.position.x, 0, toward.z - node.position.z);
+    const absDx = Math.abs(to.x);
+    const absDz = Math.abs(to.z);
+    let normal: THREE.Vector3;
+    if (absDx >= absDz) {
+      normal = to.x >= 0 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(-1, 0, 0);
+    } else {
+      normal = to.z >= 0 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 0, -1);
+    }
+    const anchor = node.position.clone().add(new THREE.Vector3(normal.x * halfW, 0, normal.z * halfD));
+    anchor.y = CONNECTION_CONFIG.Y_POSITION;
+    return { startAnchor: anchor, startOutDir: normal };
+  }
+
+  private getFootprintHit(node: Node, from: THREE.Vector3): THREE.Vector3 | null {
+    if (node.type === 'subprocess') {
+      const shell = this.getSubprocessShellDims(node, 'outer');
+      return this.rayRectIntersect(from, node.position, shell.width / 2, shell.depth / 2);
+    }
+    const radius = 0.75; // footprint ring outer radius
+    return this.rayCircleIntersect(from, node.position, radius);
+  }
+
+  private rayCircleIntersect(from: THREE.Vector3, center: THREE.Vector3, radius: number): THREE.Vector3 | null {
+    const dir = center.clone().sub(from);
+    dir.y = 0;
+    const len = dir.length();
+    if (len < 1e-4) return null;
+    dir.normalize();
+    const hit = from.clone().add(dir.multiplyScalar(Math.max(0, len - radius)));
+    hit.y = CONNECTION_CONFIG.Y_POSITION;
+    return hit;
+  }
+
+  private rayRectIntersect(from: THREE.Vector3, center: THREE.Vector3, halfW: number, halfD: number): THREE.Vector3 | null {
+    const dir = center.clone().sub(from);
+    dir.y = 0;
+    const len = dir.length();
+    if (len < 1e-4) return null;
+    dir.normalize();
+    const tx = dir.x !== 0 ? (dir.x > 0 ? (center.x - halfW - from.x) / dir.x : (center.x + halfW - from.x) / dir.x) : Infinity;
+    const tz = dir.z !== 0 ? (dir.z > 0 ? (center.z - halfD - from.z) / dir.z : (center.z + halfD - from.z) / dir.z) : Infinity;
+    const t = Math.min(tx, tz);
+    if (!Number.isFinite(t) || t < 0) return null;
+    const hit = from.clone().add(dir.multiplyScalar(Math.max(0, Math.min(t, len))));
+    hit.y = CONNECTION_CONFIG.Y_POSITION;
+    return hit;
   }
 }
