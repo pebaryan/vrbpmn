@@ -9,7 +9,7 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
       <div class="header-line"></div>
       <div class="header-content">
         <h1 class="header-title">VRBPMN</h1>
-        <span class="header-sub">SYSTEM STATUS: ACTIVE</span>
+        <span class="header-sub">{{ state.processName() || 'Process' }}</span>
       </div>
     </div>
     <div class="webxr-banner" *ngIf="webxrSupported() === false">
@@ -148,6 +148,7 @@ export class UIOverlayComponent {
     'usertask',
     'servicetask',
     'subprocess',
+    'boundary',
     'xgateway',
     'pgateway',
     'eventgateway',

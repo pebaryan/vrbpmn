@@ -11,9 +11,11 @@ export type NodeType =
   | 'subprocess'
   | 'eventgateway'
   | 'messageStart'
-  | 'messageCatch';
+  | 'messageCatch'
+  | 'boundary';
 export type InteractionMode = 'move' | 'add' | 'link' | 'delete';
 export type MultiInstanceType = 'parallel' | 'sequential' | null;
+export type BoundaryKind = 'timer' | 'message' | 'error' | 'escalation' | null;
 
 export interface Node {
   id: string;
@@ -22,6 +24,9 @@ export interface Node {
   name: string;
   description?: string;
   multiInstance?: MultiInstanceType;
+  boundaryKind?: BoundaryKind;
+  attachedTo?: string | null;
+  cancelActivity?: boolean | null;
   parentId?: string | null;
   bounds?: { width: number; height: number } | null;
 }
@@ -514,9 +519,12 @@ export class ProcessStateService {
         type: node.type,
         name: node.name,
         description: node.description ?? '',
-        multiInstance: node.multiInstance ?? null,
-        parentId: node.parentId ?? null,
-        bounds: node.bounds ?? null,
+      multiInstance: node.multiInstance ?? null,
+      boundaryKind: node.boundaryKind ?? null,
+      attachedTo: node.attachedTo ?? null,
+      cancelActivity: node.cancelActivity ?? null,
+      parentId: node.parentId ?? null,
+      bounds: node.bounds ?? null,
         position: {
           x: node.position.x,
           y: node.position.y,
@@ -575,6 +583,9 @@ export class ProcessStateService {
           name?: string;
           description?: string;
           multiInstance?: MultiInstanceType;
+          boundaryKind?: BoundaryKind;
+          attachedTo?: string | null;
+          cancelActivity?: boolean | null;
           parentId?: string | null;
           bounds?: { width: number; height: number } | null;
           position?: { x: number; y: number; z: number };
@@ -597,6 +608,9 @@ export class ProcessStateService {
         name: node.name ?? `Node ${node.id}`,
         description: node.description ?? '',
         multiInstance: node.multiInstance ?? null,
+        boundaryKind: node.boundaryKind ?? null,
+        attachedTo: node.attachedTo ?? null,
+        cancelActivity: node.cancelActivity ?? null,
         parentId: node.parentId ?? null,
         bounds: node.bounds ?? null,
         position: new THREE.Vector3(
@@ -685,18 +699,19 @@ export class ProcessStateService {
     const offsetX = margin - minX;
     const offsetY = margin - minY;
 
-    const shapeForType = (type: NodeType) => {
-      switch (type) {
-        case 'start':
-        case 'terminal':
-        case 'xgateway':
-        case 'pgateway':
-        case 'eventgateway':
-        case 'messageStart':
-        case 'messageCatch':
-          return { width: 50, height: 50 };
-        case 'subprocess':
-        case 'usertask':
+      const shapeForType = (type: NodeType) => {
+        switch (type) {
+          case 'start':
+          case 'terminal':
+          case 'xgateway':
+          case 'pgateway':
+          case 'eventgateway':
+          case 'messageStart':
+          case 'messageCatch':
+          case 'boundary':
+            return { width: 50, height: 50 };
+          case 'subprocess':
+          case 'usertask':
         case 'servicetask':
         default:
           return { width: 100, height: 80 };
@@ -774,24 +789,55 @@ export class ProcessStateService {
       const messageDef = (node.type === 'messageStart' || node.type === 'messageCatch')
         ? `<bpmn:messageEventDefinition id="MessageEvent_${node.id}" />`
         : '';
-      return { tag, xml: `${documentation}${messageDef}${multiInstance}` };
+      const boundaryDef = node.type === 'boundary' ? buildBoundaryDef(node) : '';
+      return { tag, xml: `${documentation}${messageDef}${multiInstance}${boundaryDef}` };
     };
 
-    const topLevelNodes = nodes.filter(node => !node.parentId);
+    const buildBoundaryDef = (node: Node) => {
+      const defTag = (() => {
+        switch (node.boundaryKind) {
+          case 'timer':
+            return 'bpmn:timerEventDefinition';
+          case 'message':
+            return 'bpmn:messageEventDefinition';
+          case 'error':
+            return 'bpmn:errorEventDefinition';
+          case 'escalation':
+            return 'bpmn:escalationEventDefinition';
+          default:
+            return 'bpmn:timerEventDefinition';
+        }
+      })();
+      return `<${defTag} />`;
+    };
+
+    const parentById = new Map(nodes.map(n => [n.id, n]));
+    const topLevelNodes = nodes.filter(node => {
+      if (!node.parentId) return true;
+      if (node.type !== 'boundary') return false;
+      const parent = parentById.get(node.parentId);
+      return parent ? parent.type !== 'subprocess' : true;
+    });
     const nodeXml = topLevelNodes.map(node => {
       const { tag, xml } = buildNodeXml(node);
+      const boundaryAttrs = node.type === 'boundary'
+        ? ` attachedToRef="${node.attachedTo || ''}" cancelActivity="${node.cancelActivity !== false}"`
+        : '';
       if (node.type === 'subprocess') {
         const children = childrenByParent.get(node.id) ?? [];
         const childNodesXml = children.map(child => {
           const childInfo = buildNodeXml(child);
-          return `      <${childInfo.tag} id="${child.id}" name="${escapeXml(child.name || '')}">${childInfo.xml}</${childInfo.tag}>`;
+          const childBoundaryAttrs = child.type === 'boundary'
+            ? ` attachedToRef="${child.attachedTo || ''}" cancelActivity="${child.cancelActivity !== false}"`
+            : '';
+          return `      <${childInfo.tag} id="${child.id}" name="${escapeXml(child.name || '')}"${childBoundaryAttrs}>${childInfo.xml}</${childInfo.tag}>`;
         }).join('\n');
         const childFlows = (connectionByParent.get(node.id) ?? [])
           .map(conn => `      <bpmn:sequenceFlow id="${conn.id}" sourceRef="${conn.sourceId}" targetRef="${conn.targetId}" />`)
           .join('\n');
-        return `    <${tag} id="${node.id}" name="${escapeXml(node.name || '')}">${xml}\n${childNodesXml}\n${childFlows}\n    </${tag}>`;
+        return `    <${tag} id="${node.id}" name="${escapeXml(node.name || '')}"${boundaryAttrs}>${xml}\n${childNodesXml}\n${childFlows}\n    </${tag}>`;
       }
-      return `    <${tag} id="${node.id}" name="${escapeXml(node.name || '')}">${xml}</${tag}>`;
+      return `    <${tag} id="${node.id}" name="${escapeXml(node.name || '')}"${boundaryAttrs}>${xml}</${tag}>`;
     }).join('\n');
 
     const flowXml = topLevelFlows.map(conn =>
@@ -907,10 +953,18 @@ ${edgesXml}
         return isSeq ? 'sequential' : 'parallel';
       };
 
+      const parseBoundaryKind = (el: Element): BoundaryKind => {
+        if (el.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'timerEventDefinition').length) return 'timer';
+        if (el.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'messageEventDefinition').length) return 'message';
+        if (el.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'errorEventDefinition').length) return 'error';
+        if (el.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'escalationEventDefinition').length) return 'escalation';
+        return 'timer';
+      };
+
       const hasMessageDef = (el: Element) =>
         el.getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'messageEventDefinition').length > 0;
 
-      const createNode = (el: Element, parentId: string | null) => {
+      const createNode = (el: Element, parentId: string | null, attachedTo: string | null = null) => {
         const tag = el.localName;
         const id = el.getAttribute('id');
         if (!id) return null;
@@ -925,6 +979,7 @@ ${edgesXml}
         if (tag === 'eventBasedGateway') type = 'eventgateway';
         if (tag === 'subProcess') type = 'subprocess';
         if (tag === 'intermediateCatchEvent') type = hasMessageDef(el) ? 'messageCatch' : null;
+        if (tag === 'boundaryEvent') type = 'boundary';
         if (!type) return null;
 
         const bounds = boundsById.get(id);
@@ -938,6 +993,9 @@ ${edgesXml}
           name: el.getAttribute('name') ?? `Node ${id}`,
           description: '',
           multiInstance: parseMultiInstance(el),
+          boundaryKind: type === 'boundary' ? parseBoundaryKind(el) : null,
+          attachedTo: attachedTo ?? el.getAttribute('attachedToRef') ?? null,
+          cancelActivity: type === 'boundary' ? el.getAttribute('cancelActivity') !== 'false' : null,
           position,
           parentId,
           bounds: bounds ? { width: bounds.w / scale, height: bounds.h / scale } : null
@@ -946,6 +1004,12 @@ ${edgesXml}
 
       elements.forEach(el => {
         if (el.localName === 'sequenceFlow') return;
+        if (el.localName === 'boundaryEvent') {
+          const attached = el.getAttribute('attachedToRef');
+          const node = createNode(el, attached ?? null, attached ?? null);
+          if (node) nodes.push(node);
+          return;
+        }
         if (el.localName === 'subProcess') {
           const subNode = createNode(el, null);
           if (subNode) nodes.push(subNode);

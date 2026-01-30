@@ -223,7 +223,7 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
 
   // Node Helpers
   isRound(type: NodeType) {
-    return type === 'start' || type === 'terminal' || type.endsWith('gateway') || type === 'messageStart' || type === 'messageCatch';
+    return type === 'start' || type === 'terminal' || type.endsWith('gateway') || type === 'messageStart' || type === 'messageCatch' || type === 'boundary';
   }
 
   public childNodesFor(parentId: string) {
@@ -250,7 +250,9 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
   }
 
   public getSubprocessFootprintPos(node: Node): [number, number, number] {
-    return [0, SCENE_CONFIG.GROUND_Y - node.position.y + 0.01, 0];
+    // place footprint on the connector plane in world space
+    const localY = CONNECTION_CONFIG.Y_POSITION - node.position.y;
+    return [0, localY, 0];
   }
 
   public getSubprocessFootprintGeometry(node: Node): THREE.BufferGeometry {
@@ -261,22 +263,7 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     if (cached?.key === key) return cached.geom;
     if (cached) cached.geom.dispose();
 
-    const hw = shell.width / 2;
-    const hd = shell.depth / 2;
-    const r = Math.min(radius, hw, hd);
-    const shape = new THREE.Shape();
-    shape.moveTo(-hw + r, -hd);
-    shape.lineTo(hw - r, -hd);
-    shape.absarc(hw - r, -hd + r, r, -Math.PI / 2, 0, false);
-    shape.lineTo(hw, hd - r);
-    shape.absarc(hw - r, hd - r, r, 0, Math.PI / 2, false);
-    shape.lineTo(-hw + r, hd);
-    shape.absarc(-hw + r, hd - r, r, Math.PI / 2, Math.PI, false);
-    shape.lineTo(-hw, -hd + r);
-    shape.absarc(-hw + r, -hd + r, r, Math.PI, Math.PI * 1.5, false);
-
-    const points = shape.getPoints(48).map(p => new THREE.Vector3(p.x, 0, p.y));
-    if (points.length) points.push(points[0].clone());
+    const points = this.getSubprocessFootprintPoints(node);
     const geom = new THREE.BufferGeometry().setFromPoints(points);
     this.subprocessFootprintCache.set(node.id, { key, geom });
     return geom;
@@ -406,6 +393,11 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     return this.connectionGeometries().get(conn.id) || new THREE.BufferGeometry();
   }
 
+  getTubeArgs(conn: Connection) {
+    const radius = this.connTouchesSubprocess(conn) ? 0.45 : CONNECTION_CONFIG.TUBE_RADIUS;
+    return [this.getConnPath(conn), 20, radius, 8, false] as const;
+  }
+
   getArrowPos(conn: Connection) {
     const path = this.getConnPath(conn);
     const pts = path.getPoints(20);
@@ -427,7 +419,7 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     const node = nodes.find(n => n.id === (type === 'source' ? conn.sourceId : conn.targetId));
     if (!node) return new THREE.Vector3();
     const p = node.position.clone();
-    p.y = -1.49;
+    p.y = CONNECTION_CONFIG.Y_POSITION;
     return p;
   }
 
@@ -1047,6 +1039,35 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     return { halfW: half, halfD: half, radius: size * 0.5 };
   }
 
+  private connTouchesSubprocess(conn: Connection): boolean {
+    const nodes = this.state.allNodes();
+    const s = nodes.find(n => n.id === conn.sourceId);
+    const t = nodes.find(n => n.id === conn.targetId);
+    return !!(s?.type === 'subprocess' || t?.type === 'subprocess');
+  }
+
+  private getSubprocessFootprintPoints(node: Node): THREE.Vector3[] {
+    const shell = this.getSubprocessShellDims(node, 'outer');
+    const radius = this.getSubprocessCornerRadius(shell.width, shell.depth);
+    const hw = shell.width / 2;
+    const hd = shell.depth / 2;
+    const r = Math.min(radius, hw, hd);
+    const shape = new THREE.Shape();
+    shape.moveTo(-hw + r, -hd);
+    shape.lineTo(hw - r, -hd);
+    shape.absarc(hw - r, -hd + r, r, -Math.PI / 2, 0, false);
+    shape.lineTo(hw, hd - r);
+    shape.absarc(hw - r, hd - r, r, 0, Math.PI / 2, false);
+    shape.lineTo(-hw + r, hd);
+    shape.absarc(-hw + r, hd - r, r, Math.PI / 2, Math.PI, false);
+    shape.lineTo(-hw, -hd + r);
+    shape.absarc(-hw + r, -hd + r, r, Math.PI, Math.PI * 1.5, false);
+
+    const pts = shape.getPoints(64).map(p => new THREE.Vector3(p.x, 0, p.y));
+    if (pts.length) pts.push(pts[0].clone());
+    return pts;
+  }
+
   private getSideAnchorAndDir(node: Node, toward: THREE.Vector3, offset: number): { startAnchor: THREE.Vector3; startOutDir: THREE.Vector3 } {
     const { halfW, halfD } = this.getNodeHalfExtents(node);
     const to = new THREE.Vector3(toward.x - node.position.x, 0, toward.z - node.position.z);
@@ -1096,5 +1117,14 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     const hit = from.clone().add(dir.multiplyScalar(Math.max(0, Math.min(t, len))));
     hit.y = CONNECTION_CONFIG.Y_POSITION;
     return hit;
+  }
+
+  public buildFootprintPath(node: Node): THREE.CurvePath<THREE.Vector3> {
+    const pts = this.getSubprocessFootprintPoints(node);
+    const path = new THREE.CurvePath<THREE.Vector3>();
+    for (let i = 0; i < pts.length - 1; i += 1) {
+      path.add(new THREE.LineCurve3(pts[i], pts[i + 1]));
+    }
+    return path;
   }
 }
