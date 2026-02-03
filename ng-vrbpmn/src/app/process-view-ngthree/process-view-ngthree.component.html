@@ -1,11 +1,11 @@
-<div class="viewport-container" (window:pointerup)="onMouseUp($event)">
+<div class="viewport-container">
     <th-canvas (onPointerMove)="onMouseMove($event)">
         <!-- Camera & Controls -->
         <th-perspectiveCamera #camera
             [args]="[CAMERA_CONFIG.FOV, CAMERA_CONFIG.ASPECT, CAMERA_CONFIG.NEAR, CAMERA_CONFIG.FAR]"
             [position]="[CAMERA_CONFIG.POSITION.x, CAMERA_CONFIG.POSITION.y, CAMERA_CONFIG.POSITION.z]"
             [lookAt]="lookAt">
-            <th-orbitControls #controls [enabled]="!state.draggedNodeId() && state.interactionMode() !== 'add'"
+            <th-orbitControls #controls [enabled]="!state.draggedNodeId() && !resizingNodeId() && state.interactionMode() !== 'add'"
                 [enableRotate]="true" [enableDamping]="true" [dampingFactor]="0.05" [minDistance]="2"
                 [target]="[0, 0, 0]"
                 [maxDistance]="50"></th-orbitControls>
@@ -143,12 +143,12 @@
                         </div>
                     </th-cSS2DObject>
 
-                <!-- Subprocess Footprint -->
-                <th-mesh *ngIf="node.type === 'subprocess'" [position]="getSubprocessFootprintPos(node)" [renderOrder]="1">
-                    <th-tubeGeometry [args]="[buildFootprintPath(node), 80, 0.035, 12, true]"></th-tubeGeometry>
-                    <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.28"
-                        [depthTest]="false" [depthWrite]="false"></th-meshBasicMaterial>
-                </th-mesh>
+                    <!-- Subprocess Footprint -->
+                    <th-mesh *ngIf="node.type === 'subprocess'" [position]="getSubprocessFootprintPos(node)" [renderOrder]="1">
+                        <th-tubeGeometry [args]="[buildFootprintPath(node), 80, 0.035, 12, true]"></th-tubeGeometry>
+                        <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.28"
+                            [depthTest]="false" [depthWrite]="false"></th-meshBasicMaterial>
+                    </th-mesh>
 
                 <!-- Children (subprocess contents and boundary events) -->
                 <th-group *ngIf="childNodesFor(node.id).length">
@@ -268,9 +268,33 @@
                             <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.28"
                                 [depthTest]="false" [depthWrite]="false"></th-meshBasicMaterial>
                         </th-mesh>
+
+                        <!-- Resize Edge Handles for Child Subprocess -->
                     </th-group>
                 </th-group>
             </th-group>
+
+                <!-- Resize Handles (rendered after nodes to avoid event capture) -->
+                <!-- Only show when subprocess is selected or actively resizing -->
+                <th-group *ngFor="let node of renderNodes()">
+                    <ng-container *ngIf="node.type === 'subprocess' && (state.selectedNodeIds().includes(node.id) || resizingNodeId() === node.id)">
+                        <th-group *ngFor="let handle of getSubprocessEdgeHandles(node)">
+                            <th-mesh [position]="getResizeHandleWorldPos(node, handle)" [renderOrder]="999"
+                                (onPointerOver)="onResizeHandleHover($event, node.id, handle.edge, true)"
+                                (onPointerOut)="onResizeHandleHover($event, node.id, handle.edge, false)"
+                                (onPointerDown)="onResizeEdgeDown($event, node.id, handle.edge)"
+                                (onClick)="onResizeHandleClick($event, node.id, handle.edge)">
+                                <th-sphereGeometry [args]="[0.2, 16, 16]"></th-sphereGeometry>
+                                <th-meshBasicMaterial 
+                                    [color]="(hoveredResizeNodeId() === node.id && handle.edge === activeHoveredEdge()) ? resizeHandleHoverColor : resizeHandleColor"
+                                    [transparent]="true"
+                                    [opacity]="(hoveredResizeNodeId() === node.id && handle.edge === activeHoveredEdge()) ? 1.0 : 0.9"
+                                    [depthTest]="true">
+                                </th-meshBasicMaterial>
+                            </th-mesh>
+                        </th-group>
+                    </ng-container>
+                </th-group>
 
                 <!-- Connections -->
                 <th-group *ngFor="let conn of state.allConnections()">

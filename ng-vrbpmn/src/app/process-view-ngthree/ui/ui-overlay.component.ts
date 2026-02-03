@@ -40,21 +40,16 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
       </button>
     </div>
 
+    <div id="toolbar-container" *ngIf="state.activeContainerId() as containerId">
+      <span class="container-label">INSIDE:</span>
+      <span class="container-name">{{getContainerName(containerId)}}</span>
+      <button class="tool-btn exit-btn" (click)="exitContainer()">✕ EXIT</button>
+    </div>
+
     <div id="property-sidebar" [class.hidden]="!isSidebarVisible()">
       <div class="sidebar-header">PROPERTIES</div>
       <div class="sidebar-body">
-        <div class="section-title">PROCESS</div>
-        <div class="prop-group">
-          <label>PROCESS ID</label>
-          <input class="prop-input" [value]="state.processId()" (change)="onProcessIdChange($event)" />
-        </div>
-        <div class="prop-group">
-          <label>PROCESS NAME</label>
-          <input class="prop-input" [value]="state.processName()" (change)="onProcessNameChange($event)" />
-        </div>
-        <div class="section-divider"></div>
-        <div class="section-title">NODE</div>
-        <ng-container *ngIf="selectedNode() as node; else emptyState">
+        <ng-container *ngIf="selectedNode() as node; else processSection">
           <div class="selection-count" *ngIf="state.selectedNodeIds().length > 1">
             {{state.selectedNodeIds().length}} NODES SELECTED
           </div>
@@ -83,9 +78,17 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
             <textarea class="prop-textarea" rows="4" [value]="node.description || ''"
               (change)="onDescriptionChange(node.id, $event)"></textarea>
           </div>
-          <p>This node represents a {{node.type.toUpperCase()}} step in the futuristic automated workflow.</p>
         </ng-container>
-        <ng-template #emptyState>
+        <ng-template #processSection>
+          <div class="prop-group">
+            <label>PROCESS ID</label>
+            <input class="prop-input" [value]="state.processId()" (change)="onProcessIdChange($event)" />
+          </div>
+          <div class="prop-group">
+            <label>PROCESS NAME</label>
+            <input class="prop-input" [value]="state.processName()" (change)="onProcessNameChange($event)" />
+          </div>
+          <div class="section-divider"></div>
           <p class="empty-state">Select a node to view detailed properties...</p>
         </ng-template>
       </div>
@@ -251,8 +254,17 @@ export class UIOverlayComponent {
       } else {
         this.state.importDiagramJson(text);
       }
-      input.value = '';
+       input.value = '';
     });
+  }
+
+  public getContainerName(id: string): string {
+    const node = this.state.allNodes().find(n => n.id === id);
+    return node?.name ?? id;
+  }
+
+  public exitContainer() {
+    this.state.setActiveContainer(null);
   }
 
   public formatTimestamp(epochMs: number): string {

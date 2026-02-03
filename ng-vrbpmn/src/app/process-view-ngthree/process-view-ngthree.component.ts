@@ -1,4 +1,4 @@
-import { Component, inject, computed, NO_ERRORS_SCHEMA, OnDestroy, HostListener, ViewChild, OnInit, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, computed, signal, NO_ERRORS_SCHEMA, OnDestroy, HostListener, ViewChild, OnInit, ElementRef, ChangeDetectorRef } from '@angular/core';
 import {
   NgxThreeModule,
   ThPerspectiveCamera,
@@ -145,6 +145,19 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
   public xrSupported: boolean | null = null;
   public xrActive = false;
 
+  public resizingNodeId = signal<string | null>(null);
+  public activeResizeEdge = signal<'top' | 'bottom' | 'left' | 'right' | null>(null);
+  public hoveredResizeNodeId = signal<string | null>(null);
+  public activeHoveredEdge = signal<'top' | 'bottom' | 'left' | 'right' | null>(null);
+  private resizeStartPos: THREE.Vector3 | null = null;
+  private resizeStartBounds: { width: number; height: number } | null = null;
+  private resizeStartNodePos: THREE.Vector3 | null = null; // Original node position before resize
+  private isResizeHandleClicked = false; // Flag to prevent drag when clicking resize handle
+  private readonly resizePadding = 0.6;
+  private readonly resizeHandleSize = 0.3;
+  public readonly resizeHandleColor = new THREE.Color(0xff9900);
+  public readonly resizeHandleHoverColor = new THREE.Color(0xffcc00);
+
   // Computed signal for connection geometries - only recalculates when nodes/connections change
   public connectionGeometries = computed(() => {
     const conns = this.state.allConnections();
@@ -269,7 +282,263 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     return geom;
   }
 
+  public getSubprocessMinSize(node: Node): { width: number; depth: number } {
+    const children = this.state.allNodes().filter(n => n.parentId === node.id);
+    
+    // If no children, return a reasonable minimum size
+    if (children.length === 0) {
+      return {
+        width: 2.0,
+        depth: 2.0
+      };
+    }
+
+    // Calculate bounding box of all children relative to parent
+    let minX = Infinity, maxX = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+
+    children.forEach(child => {
+      const localX = child.position.x - node.position.x;
+      const localZ = child.position.z - node.position.z;
+      
+      // Get the half-size of the child
+      const halfSize = this.isRound(child.type) ? 0.75 : 0.6;
+      
+      minX = Math.min(minX, localX - halfSize);
+      maxX = Math.max(maxX, localX + halfSize);
+      minZ = Math.min(minZ, localZ - halfSize);
+      maxZ = Math.max(maxZ, localZ + halfSize);
+    });
+
+    // Add padding around children
+    const requiredWidth = (maxX - minX) + this.resizePadding * 2;
+    const requiredDepth = (maxZ - minZ) + this.resizePadding * 2;
+
+    return {
+      width: Math.max(2.0, requiredWidth),
+      depth: Math.max(2.0, requiredDepth)
+    };
+  }
+
+  public getSubprocessEdgeHandles(node: Node): Array<{ edge: 'top' | 'bottom' | 'left' | 'right'; position: [number, number, number] }> {
+    const shell = this.getSubprocessShellDims(node, 'outer');
+    const halfW = shell.width / 2;
+    const halfD = shell.depth / 2;
+    // Position handles at footprint level (same as footprint positioning)
+    const localY = CONNECTION_CONFIG.Y_POSITION - node.position.y;
+    const handles: Array<{ edge: 'top' | 'bottom' | 'left' | 'right'; position: [number, number, number] }> = [
+      { edge: 'top', position: [0, localY, -halfD] },
+      { edge: 'bottom', position: [0, localY, halfD] },
+      { edge: 'left', position: [-halfW, localY, 0] },
+      { edge: 'right', position: [halfW, localY, 0] }
+    ];
+    return handles;
+  }
+
+  public getResizeHandleWorldPos(node: Node, handle: { edge: string; position: [number, number, number] }): [number, number, number] {
+    // Convert from local to world coordinates
+    return [
+      node.position.x + handle.position[0],
+      node.position.y + handle.position[1],
+      node.position.z + handle.position[2]
+    ];
+  }
+
+  onResizeHandleHover(event: any, nodeId: string, edge: 'top' | 'bottom' | 'left' | 'right', isHovering: boolean) {
+    if (isHovering) {
+      this.hoveredResizeNodeId.set(nodeId);
+      this.activeHoveredEdge.set(edge);
+      // Pre-emptively set the flag when hovering over handle
+      // This prevents drag from starting if user clicks while hovering
+      this.isResizeHandleClicked = true;
+    } else {
+      // Only clear if this was the currently hovered handle
+      if (this.hoveredResizeNodeId() === nodeId && this.activeHoveredEdge() === edge) {
+        this.hoveredResizeNodeId.set(null);
+        this.activeHoveredEdge.set(null);
+      }
+      // Clear the flag when leaving handle (unless actively resizing)
+      if (!this.resizingNodeId()) {
+        this.isResizeHandleClicked = false;
+      }
+    }
+  }
+
+  onResizeHandleClick(event: any, nodeId: string, edge: 'top' | 'bottom' | 'left' | 'right') {
+    this.stopEvent(event);
+    // Don't do anything here - onPointerDown already handled it
+  }
+
+  onResizeEdgeDown(event: any, nodeId: string, edge: 'top' | 'bottom' | 'left' | 'right') {
+    // Set flag immediately to prevent drag
+    this.isResizeHandleClicked = true;
+    
+    this.stopEvent(event);
+    this.suppressGroundClick = true;
+    
+    const node = this.state.allNodes().find(n => n.id === nodeId);
+    if (!node || node.type !== 'subprocess') {
+      this.isResizeHandleClicked = false;
+      return;
+    }
+
+    // Store the current node position before any drag changes
+    const originalPosition = node.position.clone();
+
+    // Prevent any drag operation from starting and end any existing drag
+    this.state.draggedNodeId.set(null);
+    this.state.endDrag();
+    this.dragStartPoint = null;
+    this.dragStartPositions.clear();
+    this.lastDragPlanePoint = null;
+    
+    // Restore original position if drag moved it
+    if (!originalPosition.equals(node.position)) {
+      this.state.moveNode(nodeId, originalPosition);
+    }
+    
+    this.resizingNodeId.set(nodeId);
+    this.activeResizeEdge.set(edge);
+    this.resizeStartPos = this.projectPointerToPlane(event, CONNECTION_CONFIG.Y_POSITION);
+    this.resizeStartBounds = { width: node.bounds?.width ?? 4, height: node.bounds?.height ?? 3 };
+    this.resizeStartNodePos = node.position.clone(); // Store original position
+    this.state.statusMessage.set('Resizing subprocess... Press ESC to cancel.');
+  }
+
+  onResizeEdgeMove(event: any) {
+    const nodeId = this.resizingNodeId();
+    const edge = this.activeResizeEdge();
+    if (!nodeId || !edge || !this.resizeStartPos || !this.resizeStartBounds) return;
+
+    const currentPos = this.projectPointerToPlane(event, CONNECTION_CONFIG.Y_POSITION);
+    if (!currentPos) return;
+
+    const node = this.state.allNodes().find(n => n.id === nodeId);
+    if (!node) return;
+
+    const deltaX = currentPos.x - this.resizeStartPos.x;
+    const deltaZ = currentPos.z - this.resizeStartPos.z;
+    const minSize = this.getSubprocessMinSize(node);
+
+    let newWidth = this.resizeStartBounds.width;
+    let newDepth = this.resizeStartBounds.height;
+    let offsetX = 0;
+    let offsetZ = 0;
+
+    if (edge === 'left') {
+      // Dragging left edge: move it left/right, opposite edge stays fixed
+      newWidth = Math.max(minSize.width, this.resizeStartBounds.width - deltaX * 2);
+      offsetX = -(newWidth - this.resizeStartBounds.width) / 2;
+    } else if (edge === 'right') {
+      // Dragging right edge: move it left/right, opposite edge stays fixed
+      newWidth = Math.max(minSize.width, this.resizeStartBounds.width + deltaX * 2);
+      offsetX = (newWidth - this.resizeStartBounds.width) / 2;
+    } else if (edge === 'top') {
+      // Dragging top edge: move it up/down, opposite edge stays fixed
+      newDepth = Math.max(minSize.depth, this.resizeStartBounds.height - deltaZ * 2);
+      offsetZ = -(newDepth - this.resizeStartBounds.height) / 2;
+    } else if (edge === 'bottom') {
+      // Dragging bottom edge: move it up/down, opposite edge stays fixed
+      newDepth = Math.max(minSize.depth, this.resizeStartBounds.height + deltaZ * 2);
+      offsetZ = (newDepth - this.resizeStartBounds.height) / 2;
+    }
+
+    // Calculate absolute new position based on original start position
+    const newPosX = this.resizeStartNodePos!.x + offsetX;
+    const newPosZ = this.resizeStartNodePos!.z + offsetZ;
+    
+    // Update bounds
+    this.state.resizeSubprocessBounds(nodeId, newWidth, newDepth, 0, 0);
+    
+    // Update position separately to absolute position
+    const newPos = new THREE.Vector3(newPosX, this.resizeStartNodePos!.y, newPosZ);
+    this.state.moveNode(nodeId, newPos);
+  }
+
+  onResizeEdgeUp() {
+    if (this.resizingNodeId()) {
+      this.state.statusMessage.set('Subprocess resized.');
+    }
+    this.resizingNodeId.set(null);
+    this.activeResizeEdge.set(null);
+    this.resizeStartPos = null;
+    this.resizeStartBounds = null;
+    this.resizeStartNodePos = null;
+    this.isResizeHandleClicked = false; // Clear the flag
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      if (this.resizingNodeId()) {
+        this.cancelResize();
+      } else if (this.xrActive) {
+        this.endVrSession();
+      }
+    }
+  }
+
+  @HostListener('window:pointermove', ['$event'])
+  onWindowPointerMoveForResize(event: PointerEvent) {
+    // Resize takes priority over dragging
+    if (this.resizingNodeId()) {
+      this.onResizeEdgeMove(event);
+      return;
+    }
+    
+    // Handle node dragging
+    if (this.state.draggedNodeId()) {
+      const dragPoint = this.projectPointerToPlane(event, this.dragPlaneY) ?? this.lastDragPlanePoint;
+      if (dragPoint) {
+        this.handleDrag(dragPoint);
+      }
+    }
+  }
+
+  @HostListener('window:pointerup', ['$event'])
+  onWindowPointerUpForResize(event: PointerEvent) {
+    // Handle resize end
+    if (this.resizingNodeId()) {
+      this.onResizeEdgeUp();
+    }
+    
+    // Handle drag end
+    this.state.endDrag();
+    this.dragStartPoint = null;
+    this.dragStartPositions.clear();
+    
+    // Allow ground clicks after this tick
+    setTimeout(() => (this.suppressGroundClick = false), 0);
+  }
+
+  cancelResize() {
+    if (this.resizingNodeId()) {
+      this.state.statusMessage.set('Resize cancelled.');
+    }
+    this.resizingNodeId.set(null);
+    this.activeResizeEdge.set(null);
+    this.resizeStartPos = null;
+    this.resizeStartBounds = null;
+    this.resizeStartNodePos = null;
+    this.isResizeHandleClicked = false; // Clear the flag
+  }
+
+  public isSubprocessHovered(nodeId: string): boolean {
+    const result = this.state.hoveredNodeId() === nodeId || this.hoveredResizeNodeId() === nodeId;
+    return result;
+  }
+
   onNodeDown(event: any, nodeId: string) {
+    // Don't handle node clicks if a resize handle was just clicked
+    if (this.isResizeHandleClicked) {
+      return;
+    }
+    
+    // Don't handle node clicks if we're currently resizing
+    if (this.resizingNodeId()) {
+      return;
+    }
+    
     this.stopEvent(event);
     this.suppressGroundClick = true;
     const shiftKey = this.getShiftKey(event);
@@ -281,13 +550,12 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
       }
       // If multiple selected and clicking one of them, keep selection and start drag for the group
       if (alreadySelected && this.state.selectedNodeIds().length > 1) {
-        this.state.draggedNodeId.set(nodeId);
-        this.beginDrag(event, nodeId);
+        this.beginDrag(event, nodeId); // beginDrag will set draggedNodeId internally
         return;
       }
       // Single selection drag
       this.state.selectNode(nodeId);
-      this.beginDrag(event, nodeId);
+      this.beginDrag(event, nodeId); // beginDrag will set draggedNodeId internally
       return;
     }
     this.state.selectNode(nodeId);
@@ -472,29 +740,6 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
     this.handleDrag(dragPoint);
   }
 
-  onMouseUp(event: MouseEvent) {
-    this.state.endDrag();
-    this.dragStartPoint = null;
-    this.dragStartPositions.clear();
-    // allow ground clicks after this tick
-    setTimeout(() => (this.suppressGroundClick = false), 0);
-  }
-
-  @HostListener('window:pointermove', ['$event'])
-  onWindowPointerMove(event: PointerEvent) {
-    if (!this.state.draggedNodeId()) return;
-    const dragPoint = this.projectPointerToPlane(event, this.dragPlaneY) ?? this.lastDragPlanePoint;
-    if (!dragPoint) return;
-    this.handleDrag(dragPoint);
-  }
-
-  @HostListener('window:keydown', ['$event'])
-  onKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Escape' && this.xrActive) {
-      this.endVrSession();
-    }
-  }
-
   private handleDrag(dragPoint: THREE.Vector3) {
     this.lastDragPlanePoint = dragPoint.clone();
     const pos = dragPoint.clone();
@@ -526,6 +771,18 @@ export class ProcessViewNgThreeComponent implements OnInit, OnDestroy {
   }
 
   private beginDrag(event: any, nodeId: string) {
+    // Don't start drag if resize handle was clicked
+    if (this.isResizeHandleClicked) {
+      return;
+    }
+    
+    // Don't start drag if we're resizing
+    if (this.resizingNodeId()) {
+      return;
+    }
+    
+    this.state.draggedNodeId.set(nodeId);
+    
     const node = this.state.allNodes().find(n => n.id === nodeId);
     this.dragPlaneY = node?.position.y ?? 0;
     const pointerHit = this.projectPointerToPlane(event, this.dragPlaneY);

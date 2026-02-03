@@ -61,6 +61,7 @@ export class ProcessStateService {
   public lastSavedAt = signal<number | null>(null);
   public isDirty = signal<boolean>(false);
   public snapToGrid = signal<boolean>(true);
+  public activeContainerId = signal<string | null>(null);
 
   public hoverNode(id: string | null, isHovered: boolean) {
     this.hoveredNodeId.set(isHovered ? id : null);
@@ -137,23 +138,69 @@ export class ProcessStateService {
     this.statusMessage.set(`Selected Node Type: ${type.toUpperCase()}`);
   }
 
-  public addNode(position: THREE.Vector3) {
+   public addNode(position: THREE.Vector3) {
     const type = this.currentNodeType();
-    console.log('Adding node of type:', type, 'at', position);
+    const containerId = this.activeContainerId();
+    const container = containerId ? this.nodes().find(n => n.id === containerId) : null;
+
     const id = this.getNextId();
+    let finalPos = position.clone();
+
+    if (container) {
+      finalPos = container.position.clone().add(position);
+    }
+
     const newNode: Node = {
       id,
       type,
-      position: position.clone(),
+      position: finalPos,
       name: `Node ${id}`,
       description: '',
       multiInstance: null,
-      parentId: null,
+      parentId: containerId,
       bounds: null
     };
     this.nodes.update(nodes => [...nodes, newNode]);
     this.isDirty.set(true);
-    this.statusMessage.set(`Added ${type} at ${position.x.toFixed(1)}, ${position.z.toFixed(1)}`);
+
+    const locDesc = container ? `inside ${container.name}` : `at ${position.x.toFixed(1)}, ${position.z.toFixed(1)}`;
+    this.statusMessage.set(`Added ${type} ${locDesc}`);
+  }
+
+  public setActiveContainer(id: string | null) {
+    if (id) {
+      const node = this.nodes().find(n => n.id === id);
+      if (!node || node.type !== 'subprocess') {
+        this.statusMessage.set('Only subprocess nodes can be containers.');
+        return;
+      }
+      this.activeContainerId.set(id);
+      this.statusMessage.set(`Now adding nodes inside: ${node.name}`);
+    } else {
+      this.activeContainerId.set(null);
+      this.statusMessage.set('Now adding nodes at root level.');
+    }
+  }
+
+  public resizeSubprocessBounds(id: string, newWidth: number, newDepth: number, offsetX: number = 0, offsetZ: number = 0) {
+    this.nodes.update(nodes => {
+      const node = nodes.find(n => n.id === id);
+      if (!node || node.type !== 'subprocess') return nodes;
+
+      return nodes.map(n => {
+        if (n.id === id) {
+          // Update subprocess bounds and position
+          const pos = n.position.clone();
+          pos.x += offsetX;
+          pos.z += offsetZ;
+          return { ...n, bounds: { width: newWidth, height: newDepth }, position: pos };
+        }
+        // Child nodes don't need to move since parent is moving
+        return n;
+      });
+    });
+    this.isDirty.set(true);
+    this.statusMessage.set(`Resized subprocess to ${newWidth.toFixed(1)} × ${newDepth.toFixed(1)}`);
   }
 
   public moveNode(id: string, position: THREE.Vector3) {
@@ -974,10 +1021,23 @@ ${edgesXml}
         if (tag === 'endEvent') type = 'terminal';
         if (tag === 'userTask') type = 'usertask';
         if (tag === 'serviceTask') type = 'servicetask';
+        if (tag === 'task') {
+          const taskType = el.getAttribute('type') ?? el.getAttribute('taskType') ?? '';
+          type = taskType.toLowerCase().includes('service') ? 'servicetask' : 'usertask';
+        }
+        if (tag === 'scriptTask') type = 'servicetask';
+        if (tag === 'sendTask') type = 'servicetask';
+        if (tag === 'receiveTask') type = 'usertask';
+        if (tag === 'manualTask') type = 'usertask';
         if (tag === 'exclusiveGateway') type = 'xgateway';
         if (tag === 'parallelGateway') type = 'pgateway';
         if (tag === 'eventBasedGateway') type = 'eventgateway';
+        if (tag === 'inclusiveGateway') type = 'pgateway';
+        if (tag === 'complexGateway') type = 'pgateway';
         if (tag === 'subProcess') type = 'subprocess';
+        if (tag === 'transaction') type = 'subprocess';
+        if (tag === 'adHocSubProcess') type = 'subprocess';
+        if (tag === 'intermediateThrowEvent') type = 'messageCatch';
         if (tag === 'intermediateCatchEvent') type = hasMessageDef(el) ? 'messageCatch' : null;
         if (tag === 'boundaryEvent') type = 'boundary';
         if (!type) return null;
