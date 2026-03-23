@@ -5,6 +5,10 @@ import { ChangeDetectorRef } from '@angular/core';
 import * as THREE from 'three';
 import { CAMERA_CONFIG } from './process-view.constants';
 
+function resolveThreeObject<T = THREE.Object3D>(ref: any): T | null {
+  return ref?.object3d ?? ref?.object3D ?? ref?.threeObject ?? ref?._objRef ?? ref?.camera ?? null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class VrSessionService {
   private processState = inject(ProcessStateService);
@@ -115,8 +119,8 @@ export class VrSessionService {
 
       renderer.setAnimationLoop?.((time: number) => {
         this.updateLocomotion(time);
-        const sceneObj = this.sceneRef?.object3d ?? this.sceneRef?._objRef ?? this.sceneRef?.threeObject;
-        const camObj = (this.cameraRef as any)?._objRef ?? (this.cameraRef as any)?.object3d ?? (this.cameraRef as any)?.threeObject ?? this.lastCamera;
+        const sceneObj = resolveThreeObject(this.sceneRef);
+        const camObj = resolveThreeObject<THREE.Camera>(this.cameraRef) ?? this.lastCamera;
         if (sceneObj && camObj) {
           renderer.render(sceneObj, camObj);
         } else {
@@ -166,7 +170,7 @@ export class VrSessionService {
     this.teleportMarker.visible = false;
     this.teleportMarker.renderOrder = 999;
 
-    const sceneObj = this.sceneRef?.object3d ?? this.sceneRef?._objRef ?? this.sceneRef?.threeObject;
+    const sceneObj = resolveThreeObject(this.sceneRef);
     if (sceneObj) {
       sceneObj.add(this.teleportMarker);
     }
@@ -250,16 +254,16 @@ export class VrSessionService {
   }
 
   private updateRigReference() {
-    const camObj = (this.cameraRef as any)?._objRef ?? (this.cameraRef as any)?.object3d ?? (this.cameraRef as any)?.threeObject;
+    const camObj = resolveThreeObject(this.cameraRef);
     if (camObj?.parent) {
-      this.rigGroup = camObj.parent;
+      this.rigGroup = camObj.parent as THREE.Group;
     }
   }
 
   private applyThumbstickMovement(x: number, y: number) {
     if (!this.rigGroup || !this.cameraRef) return;
 
-    const camObj = (this.cameraRef as any)?._objRef ?? (this.cameraRef as any)?.object3d ?? (this.cameraRef as any)?.threeObject;
+    const camObj = resolveThreeObject(this.cameraRef);
     if (!camObj) return;
 
     const forward = new THREE.Vector3(0, 0, -1);
@@ -284,7 +288,7 @@ export class VrSessionService {
   private applySnapTurn(direction: number, time: number) {
     if (!this.cameraRef || time - this.lastSnapTurnTime < this.SNAP_TURN_COOLDOWN) return;
 
-    const camObj = (this.cameraRef as any)?._objRef ?? (this.cameraRef as any)?.object3d ?? (this.cameraRef as any)?.threeObject;
+    const camObj = resolveThreeObject(this.cameraRef);
     if (!camObj) return;
 
     camObj.rotateY(direction * this.SNAP_TURN_ANGLE);
@@ -315,7 +319,7 @@ export class VrSessionService {
     const raycaster = new THREE.Raycaster(origin, direction);
     raycaster.far = this.TELEPORT_RANGE;
 
-    const sceneObj = this.sceneRef?.object3d ?? this.sceneRef?._objRef ?? this.sceneRef?.threeObject;
+    const sceneObj = resolveThreeObject(this.sceneRef);
     if (!sceneObj) return;
 
     const ground = sceneObj.getObjectByName('ground');
@@ -339,7 +343,7 @@ export class VrSessionService {
   private cleanupLocomotion() {
     if (this.teleportMarker) {
       this.teleportMarker.visible = false;
-      const sceneObj = this.sceneRef?.object3d ?? this.sceneRef?._objRef ?? this.sceneRef?.threeObject;
+      const sceneObj = resolveThreeObject(this.sceneRef);
       if (sceneObj && this.teleportMarker.parent === sceneObj) {
         sceneObj.remove(this.teleportMarker);
       }
@@ -376,18 +380,12 @@ export class VrSessionService {
   }
 
   resetView() {
-    const cam: THREE.PerspectiveCamera | undefined =
-      (this.cameraRef as any)?.object3d ??
-      (this.cameraRef as any)?.object3D ??
-      (this.cameraRef as any)?.threeObject ??
-      (this.cameraRef as any)?._objRef ??
-      (this.cameraRef as any)?.camera ??
-      undefined;
+    const cam = resolveThreeObject<THREE.PerspectiveCamera>(this.cameraRef);
 
     if (cam) {
       cam.position.copy(CAMERA_CONFIG.POSITION);
       cam.lookAt(CAMERA_CONFIG.LOOK_AT);
-      cam.updateProjectionMatrix();
+      (cam as THREE.PerspectiveCamera).updateProjectionMatrix();
       this.lastCamera = cam;
     }
 
@@ -401,13 +399,7 @@ export class VrSessionService {
   }
 
   private storeCameraState() {
-    const cam: any =
-      (this.cameraRef as any)?.object3d ??
-      (this.cameraRef as any)?.object3D ??
-      (this.cameraRef as any)?.threeObject ??
-      (this.cameraRef as any)?._objRef ??
-      (this.cameraRef as any)?.camera ??
-      null;
+    const cam = resolveThreeObject(this.cameraRef);
 
     if (cam) {
       this.prevCameraPos = cam.position.clone();
@@ -420,18 +412,12 @@ export class VrSessionService {
   }
 
   private restoreCameraState() {
-    const cam: any =
-      (this.cameraRef as any)?.object3d ??
-      (this.cameraRef as any)?.object3D ??
-      (this.cameraRef as any)?.threeObject ??
-      (this.cameraRef as any)?._objRef ??
-      (this.cameraRef as any)?.camera ??
-      null;
+    const cam = resolveThreeObject(this.cameraRef);
 
     if (cam && this.prevCameraPos) {
       cam.position.copy(this.prevCameraPos);
       cam.lookAt(CAMERA_CONFIG.LOOK_AT);
-      cam.updateProjectionMatrix();
+      (cam as THREE.PerspectiveCamera).updateProjectionMatrix();
     }
 
     const controls: any = (this.controlsRef as any)?._objRef ?? (this.controlsRef as any);
@@ -489,7 +475,7 @@ export class VrSessionService {
     return (
       (this.cameraRef as any)?._renderer ??
       (this.cameraRef as any)?.renderer ??
-      (this.engineRef as any)?.wegblRenderer ??
+      (this.engineRef as any)?.webglRenderer ??
       (this.engineRef as any)?.webglRenderer ??
       null
     );
@@ -521,9 +507,7 @@ export class VrSessionService {
       if (!renderer) return;
 
       const camObj: THREE.Camera | undefined =
-        (this.cameraRef as any)?._objRef ??
-        (this.cameraRef as any)?.object3d ??
-        (this.cameraRef as any)?.threeObject ??
+        resolveThreeObject<THREE.Camera>(this.cameraRef) ??
         this.lastCamera ??
         undefined;
 

@@ -163,7 +163,7 @@ export class ConnectionPathBuilder {
     const cleaned: THREE.Vector3[] = [];
     for (let i = 0; i < simplified.length; i += 1) {
       const p = simplified[i];
-      const prev = cleaned[simplified.length - 1];
+      const prev = cleaned.length > 0 ? cleaned[cleaned.length - 1] : undefined;
       const next = simplified[i + 1];
       if (!prev || !next) {
         cleaned.push(p);

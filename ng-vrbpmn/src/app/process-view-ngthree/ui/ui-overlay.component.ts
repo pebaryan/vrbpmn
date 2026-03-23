@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, OnInit, ViewChild, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { UpperCasePipe } from '@angular/common';
 import { ProcessStateService, InteractionMode, NodeType } from '../process-state.service';
 
 @Component({
@@ -12,9 +12,11 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
         <span class="header-sub">{{ state.processName() || 'Process' }}</span>
       </div>
     </div>
-    <div class="webxr-banner" *ngIf="webxrSupported() === false">
-      WebXR not available on this device. Using desktop mode.
-    </div>
+    @if (webxrSupported() === false) {
+      <div class="webxr-banner">
+        WebXR not available on this device. Using desktop mode.
+      </div>
+    }
 
     <div id="toolbar-left">
       <button class="tool-btn" [class.active]="state.interactionMode() === 'move'" (click)="state.setMode('move')">
@@ -34,25 +36,33 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
       </button>
     </div>
 
-    <div id="toolbar-bottom" *ngIf="state.interactionMode() === 'add'">
-      <button *ngFor="let type of nodeTypes" class="node-btn" [class.active]="state.currentNodeType() === type" (click)="state.setNodeType(type)">
-        {{type | uppercase}}
-      </button>
-    </div>
+    @if (state.interactionMode() === 'add') {
+      <div id="toolbar-bottom">
+        @for (type of nodeTypes; track type) {
+          <button class="node-btn" [class.active]="state.currentNodeType() === type" (click)="state.setNodeType(type)">
+            {{type | uppercase}}
+          </button>
+        }
+      </div>
+    }
 
-    <div id="toolbar-container" *ngIf="state.activeContainerId() as containerId">
-      <span class="container-label">INSIDE:</span>
-      <span class="container-name">{{getContainerName(containerId)}}</span>
-      <button class="tool-btn exit-btn" (click)="exitContainer()">✕ EXIT</button>
-    </div>
+    @if (state.activeContainerId(); as containerId) {
+      <div id="toolbar-container">
+        <span class="container-label">INSIDE:</span>
+        <span class="container-name">{{getContainerName(containerId)}}</span>
+        <button class="tool-btn exit-btn" (click)="exitContainer()">✕ EXIT</button>
+      </div>
+    }
 
     <div id="property-sidebar" [class.hidden]="!isSidebarVisible()">
       <div class="sidebar-header">PROPERTIES</div>
       <div class="sidebar-body">
-        <ng-container *ngIf="selectedNode() as node; else processSection">
-          <div class="selection-count" *ngIf="state.selectedNodeIds().length > 1">
-            {{state.selectedNodeIds().length}} NODES SELECTED
-          </div>
+        @if (selectedNode(); as node) {
+          @if (state.selectedNodeIds().length > 1) {
+            <div class="selection-count">
+              {{state.selectedNodeIds().length}} NODES SELECTED
+            </div>
+          }
           <div class="prop-group">
             <label>NODE ID</label>
             <input class="prop-input" [value]="node.id" (change)="onIdChange(node.id, $event)" />
@@ -61,14 +71,16 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
             <label>TYPE</label>
             <div class="prop-val">{{node.type | uppercase}}</div>
           </div>
-          <div class="prop-group" *ngIf="supportsMultiInstance(node.type)">
-            <label>MULTI-INSTANCE</label>
-            <select class="prop-input" [value]="node.multiInstance || 'none'" (change)="onMultiInstanceChange(node.id, $event)">
-              <option value="none">NONE</option>
-              <option value="parallel">PARALLEL</option>
-              <option value="sequential">SEQUENTIAL</option>
-            </select>
-          </div>
+          @if (supportsMultiInstance(node.type)) {
+            <div class="prop-group">
+              <label>MULTI-INSTANCE</label>
+              <select class="prop-input" [value]="node.multiInstance || 'none'" (change)="onMultiInstanceChange(node.id, $event)">
+                <option value="none">NONE</option>
+                <option value="parallel">PARALLEL</option>
+                <option value="sequential">SEQUENTIAL</option>
+              </select>
+            </div>
+          }
           <div class="prop-group">
             <label>NAME</label>
             <input class="prop-input" [value]="node.name" (change)="onNameChange(node.id, $event)" />
@@ -78,8 +90,7 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
             <textarea class="prop-textarea" rows="4" [value]="node.description || ''"
               (change)="onDescriptionChange(node.id, $event)"></textarea>
           </div>
-        </ng-container>
-        <ng-template #processSection>
+        } @else {
           <div class="prop-group">
             <label>PROCESS ID</label>
             <input class="prop-input" [value]="state.processId()" (change)="onProcessIdChange($event)" />
@@ -90,7 +101,7 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
           </div>
           <div class="section-divider"></div>
           <p class="empty-state">Select a node to view detailed properties...</p>
-        </ng-template>
+        }
       </div>
       <div class="sidebar-footer">
         <button class="action-btn" (click)="state.openModal()">VIEW DETAILS</button>
@@ -105,38 +116,43 @@ import { ProcessStateService, InteractionMode, NodeType } from '../process-state
     </div>
     <button id="sidebar-toggle" (click)="isSidebarVisible.set(!isSidebarVisible())">⬌</button>
 
-    <!-- Modal -->
-    <div id="modal-container" *ngIf="state.showModal()" (click)="state.closeModal()">
-      <div id="modal" (click)="$event.stopPropagation()">
-        <h3>NODE DETAILS: {{selectedNode()?.name | uppercase}}</h3>
-        <p>Information about this process step...</p>
-        <div class="modal-content">
-            <p><strong>TYPE:</strong> {{selectedNode()?.type | uppercase}}</p>
-            <p><strong>POSITION:</strong> 
-                X: {{selectedNode()?.position?.x?.toFixed(1)}}, 
-                Z: {{selectedNode()?.position?.z?.toFixed(1)}}
-            </p>
-            <p>This node is part of the futuristic automated workflow system. It is currently in a READY state following process mapping protocols.</p>
+    @if (state.showModal()) {
+      <div id="modal-container" (click)="state.closeModal()">
+        <div id="modal" (click)="$event.stopPropagation()">
+          <h3>NODE DETAILS: {{selectedNode()?.name | uppercase}}</h3>
+          <p>Information about this process step...</p>
+          <div class="modal-content">
+              <p><strong>TYPE:</strong> {{selectedNode()?.type | uppercase}}</p>
+              <p><strong>POSITION:</strong>
+                  X: {{selectedNode()?.position?.x?.toFixed(1)}},
+                  Z: {{selectedNode()?.position?.z?.toFixed(1)}}
+              </p>
+              <p>This node is part of the futuristic automated workflow system. It is currently in a READY state following process mapping protocols.</p>
+          </div>
+          <button class="close-btn" (click)="state.closeModal()">CLOSE</button>
         </div>
-        <button class="close-btn" (click)="state.closeModal()">CLOSE</button>
       </div>
-    </div>
+    }
 
     <div id="statusbar">
       <div class="statusbar-body">
         <p id="statusbar-content">
           {{state.statusMessage()}}
-          <span *ngIf="state.isDirty()" class="statusbar-meta statusbar-alert">UNSAVED CHANGES</span>
-          <span *ngIf="state.lastSavedAt()" class="statusbar-meta">
-            LAST SAVED: {{formatTimestamp(state.lastSavedAt()!)}}
-          </span>
+          @if (state.isDirty()) {
+            <span class="statusbar-meta statusbar-alert">UNSAVED CHANGES</span>
+          }
+          @if (state.lastSavedAt()) {
+            <span class="statusbar-meta">
+              LAST SAVED: {{formatTimestamp(state.lastSavedAt()!)}}
+            </span>
+          }
         </p>
       </div>
     </div>
   `,
   styleUrls: ['./ui-overlay.component.scss'],
   standalone: true,
-  imports: [CommonModule]
+  imports: [UpperCasePipe]
 })
 export class UIOverlayComponent {
   public state = inject(ProcessStateService);

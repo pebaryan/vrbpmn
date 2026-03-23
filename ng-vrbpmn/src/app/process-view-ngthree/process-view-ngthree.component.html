@@ -1,304 +1,193 @@
 <div class="viewport-container">
+    <!-- Shared node body template (eliminates duplication between root and child nodes) -->
+    <ng-template #nodeBody let-n>
+        <th-group (onBeforeRender)="onNodeRender($event, n.id)">
+            <!-- Subprocess Shell (open box) -->
+            @if (n.type === 'subprocess') {
+                @if (getSubprocessShellDims(n, 'outer'); as shell) {
+                    <th-group>
+                        <th-mesh [position]="[-shell.width / 2, 0, 0]" [rotation]="[0, Math.PI / 2, 0]">
+                            <th-planeGeometry [args]="[shell.depth, shell.height]"></th-planeGeometry>
+                            <th-meshPhysicalMaterial
+                                [color]="COLORS.DARK_GRAY" [metalness]="0.1" [roughness]="0.2"
+                                [transmission]="0.2" [transparent]="true" [opacity]="0.35"
+                                [emissive]="COLORS.CYAN" [emissiveIntensity]="0.6"
+                                [side]="THREE.DoubleSide">
+                            </th-meshPhysicalMaterial>
+                        </th-mesh>
+                        <th-mesh [position]="[shell.width / 2, 0, 0]" [rotation]="[0, -Math.PI / 2, 0]">
+                            <th-planeGeometry [args]="[shell.depth, shell.height]"></th-planeGeometry>
+                            <th-meshPhysicalMaterial
+                                [color]="COLORS.DARK_GRAY" [metalness]="0.1" [roughness]="0.2"
+                                [transmission]="0.2" [transparent]="true" [opacity]="0.35"
+                                [emissive]="COLORS.CYAN" [emissiveIntensity]="0.6"
+                                [side]="THREE.DoubleSide">
+                            </th-meshPhysicalMaterial>
+                        </th-mesh>
+                        <th-mesh [position]="[0, 0, -shell.depth / 2]">
+                            <th-planeGeometry [args]="[shell.width, shell.height]"></th-planeGeometry>
+                            <th-meshPhysicalMaterial
+                                [color]="COLORS.DARK_GRAY" [metalness]="0.1" [roughness]="0.2"
+                                [transmission]="0.2" [transparent]="true" [opacity]="0.35"
+                                [emissive]="COLORS.CYAN" [emissiveIntensity]="0.6"
+                                [side]="THREE.DoubleSide">
+                            </th-meshPhysicalMaterial>
+                        </th-mesh>
+                        <th-mesh [position]="[0, 0, shell.depth / 2]" [rotation]="[0, Math.PI, 0]">
+                            <th-planeGeometry [args]="[shell.width, shell.height]"></th-planeGeometry>
+                            <th-meshPhysicalMaterial
+                                [color]="COLORS.DARK_GRAY" [metalness]="0.1" [roughness]="0.2"
+                                [transmission]="0.2" [transparent]="true" [opacity]="0.35"
+                                [emissive]="COLORS.CYAN" [emissiveIntensity]="0.6"
+                                [side]="THREE.DoubleSide">
+                            </th-meshPhysicalMaterial>
+                        </th-mesh>
+                    </th-group>
+                }
+            }
+            <!-- Outer Shell -->
+            @if (n.type !== 'subprocess') {
+                <th-mesh>
+                    @if (isRound(n.type)) {
+                        <th-cylinderGeometry [args]="[0.75, 0.75, 1.25, 32]"></th-cylinderGeometry>
+                    } @else {
+                        <th-boxGeometry [args]="[1.2, 1.2, 1.2]"></th-boxGeometry>
+                    }
+                    <th-meshPhysicalMaterial
+                        [color]="(state.selectedNodeIds().includes(n.id) || state.hoveredNodeId() === n.id) ? COLORS.HIGHLIGHT : COLORS.BLACK"
+                        [metalness]="0.1" [roughness]="0.4" [transmission]="0.5" [thickness]="1.0"
+                        [transparent]="true"
+                        [emissive]="(state.selectedNodeIds().includes(n.id) || state.hoveredNodeId() === n.id) ? COLORS.CYAN : COLORS.DARK_GRAY"
+                        [emissiveIntensity]="(state.selectedNodeIds().includes(n.id) || state.hoveredNodeId() === n.id) ? 2 : 1"
+                        [opacity]="0.7">
+                    </th-meshPhysicalMaterial>
+                </th-mesh>
+            }
+            <!-- Inner Icon -->
+            <th-mesh>
+                @if (n.type === 'start' || n.type === 'messageStart' || n.type === 'messageCatch') {
+                    <th-sphereGeometry [args]="[0.3, 24, 24]"></th-sphereGeometry>
+                }
+                @if (n.type === 'boundary') {
+                    <th-torusGeometry [args]="[0.35, 0.05, 12, 32]"></th-torusGeometry>
+                }
+                @if (n.type === 'usertask') {
+                    <th-cylinderGeometry [args]="[0.15, 0.25, 0.5, 32]"></th-cylinderGeometry>
+                }
+                @if (n.type === 'servicetask' || n.type === 'subprocess') {
+                    <th-boxGeometry [args]="[0.5, 0.5, 0.5]"></th-boxGeometry>
+                }
+                @if (n.type === 'xgateway' || n.type === 'eventgateway') {
+                    <th-octahedronGeometry [args]="[0.4]"></th-octahedronGeometry>
+                }
+                @if (n.type === 'pgateway') {
+                    <th-capsuleGeometry [args]="[0.25, 0.25, 4, 8]"></th-capsuleGeometry>
+                }
+                @if (n.type === 'terminal') {
+                    <th-torusGeometry [args]="[0.3, 0.05, 8, 24]"></th-torusGeometry>
+                }
+                <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
+                    [emissiveIntensity]="10" [wireframe]="true"></th-meshStandardMaterial>
+            </th-mesh>
+        </th-group>
+
+        <!-- Label -->
+        <th-cSS2DObject [position]="[0, 1.5, 0]">
+            <div class="floating-label" (click)="onLabelClick($event, n.id)">
+                {{n.type | uppercase}}@if (n.multiInstance) {<span> (MI)</span>}
+            </div>
+        </th-cSS2DObject>
+
+        <!-- Subprocess Footprint -->
+        @if (n.type === 'subprocess') {
+            <th-mesh [position]="getSubprocessFootprintPos(n)" [renderOrder]="1">
+                <th-tubeGeometry [args]="[buildFootprintPath(n), 80, 0.035, 12, true]"></th-tubeGeometry>
+                <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.28"
+                    [depthTest]="false" [depthWrite]="false"></th-meshBasicMaterial>
+            </th-mesh>
+        }
+    </ng-template>
+
     <th-canvas (onPointerMove)="onMouseMove($event)">
         <!-- Camera & Controls -->
         <th-perspectiveCamera #camera
             [args]="[CAMERA_CONFIG.FOV, CAMERA_CONFIG.ASPECT, CAMERA_CONFIG.NEAR, CAMERA_CONFIG.FAR]"
             [position]="[CAMERA_CONFIG.POSITION.x, CAMERA_CONFIG.POSITION.y, CAMERA_CONFIG.POSITION.z]"
             [lookAt]="lookAt">
-            <th-orbitControls #controls [enabled]="!state.draggedNodeId() && !resizingNodeId() && state.interactionMode() !== 'add'"
-                [enableRotate]="true" [enableDamping]="true" [dampingFactor]="0.05" [minDistance]="2"
-                [target]="[0, 0, 0]"
-                [maxDistance]="50"></th-orbitControls>
+            <th-orbitControls #controls
+                [enabled]="!state.draggedNodeId() && !resizingNodeId() && state.interactionMode() !== 'add'"
+                [enableRotate]="true" [enableDamping]="true" [dampingFactor]="0.05"
+                [minDistance]="2" [target]="[0, 0, 0]" [maxDistance]="50">
+            </th-orbitControls>
         </th-perspectiveCamera>
 
         <th-scene #scene [background]="COLORS.FOG" (onPointerMove)="onMouseMove($event)">
             <!-- Lights -->
             <th-ambientLight [color]="COLORS.AMBIENT" [intensity]="LIGHT_CONFIG.AMBIENT_INTENSITY"></th-ambientLight>
-            <th-pointLight [color]="COLORS.CYAN" [intensity]="LIGHT_CONFIG.POINT_LIGHT_INTENSITY" [distance]="100"
-                [position]="[0, 10, 5]"></th-pointLight>
+            <th-pointLight [color]="COLORS.CYAN" [intensity]="LIGHT_CONFIG.POINT_LIGHT_INTENSITY"
+                [distance]="100" [position]="[0, 10, 5]"></th-pointLight>
 
             <th-group [position]="[0, 0, 0]">
-                <!-- Ground Group -->
+                <!-- Ground -->
                 <th-group [position]="[0, 0, 0]">
-                    <!-- Mirror/Ground -->
                     <th-mesh name="ground" [rotation]="[-Math.PI / 2, 0, 0]" [position]="[0, -1.5, 0]"
                         (onPointerDown)="onGroundPointer($event)">
                         <th-planeGeometry [args]="[100, 100]"></th-planeGeometry>
                         <th-meshStandardMaterial [color]="COLORS.GROUND" [roughness]="1"
                             [metalness]="0"></th-meshStandardMaterial>
                     </th-mesh>
-
-                    <!-- Grid -->
                     <th-object3D [object]="grid"></th-object3D>
                 </th-group>
 
                 <!-- Nodes -->
-                <th-group *ngFor="let node of renderNodes()" [position]="node.position"
-                    (onPointerOver)="state.hoverNode(node.id, true)" (onPointerOut)="state.hoverNode(node.id, false)"
-                    (onPointerDown)="onNodeDown($event, node.id)">
-                    <!-- Physical Node -->
-                    <th-group (onBeforeRender)="onNodeRender($event, node.id)">
-                        <!-- Subprocess Shell (open box) -->
-                        <ng-container *ngIf="node.type === 'subprocess'">
-                            <ng-container *ngIf="getSubprocessShellDims(node, 'outer') as shell">
-                                <th-group>
-                                    <th-mesh [position]="[-shell.width / 2, 0, 0]" [rotation]="[0, Math.PI / 2, 0]">
-                                        <th-planeGeometry [args]="[shell.depth, shell.height]"></th-planeGeometry>
-                                        <th-meshPhysicalMaterial
-                                            [color]="COLORS.DARK_GRAY"
-                                            [metalness]="0.1"
-                                            [roughness]="0.2"
-                                            [transmission]="0.2"
-                                            [transparent]="true"
-                                            [opacity]="0.35"
-                                            [emissive]="COLORS.CYAN"
-                                            [emissiveIntensity]="0.6"
-                                            [side]="THREE.DoubleSide">
-                                        </th-meshPhysicalMaterial>
-                                    </th-mesh>
-                                    <th-mesh [position]="[shell.width / 2, 0, 0]" [rotation]="[0, -Math.PI / 2, 0]">
-                                        <th-planeGeometry [args]="[shell.depth, shell.height]"></th-planeGeometry>
-                                        <th-meshPhysicalMaterial
-                                            [color]="COLORS.DARK_GRAY"
-                                            [metalness]="0.1"
-                                            [roughness]="0.2"
-                                            [transmission]="0.2"
-                                            [transparent]="true"
-                                            [opacity]="0.35"
-                                            [emissive]="COLORS.CYAN"
-                                            [emissiveIntensity]="0.6"
-                                            [side]="THREE.DoubleSide">
-                                        </th-meshPhysicalMaterial>
-                                    </th-mesh>
-                                    <th-mesh [position]="[0, 0, -shell.depth / 2]">
-                                        <th-planeGeometry [args]="[shell.width, shell.height]"></th-planeGeometry>
-                                        <th-meshPhysicalMaterial
-                                            [color]="COLORS.DARK_GRAY"
-                                            [metalness]="0.1"
-                                            [roughness]="0.2"
-                                            [transmission]="0.2"
-                                            [transparent]="true"
-                                            [opacity]="0.35"
-                                            [emissive]="COLORS.CYAN"
-                                            [emissiveIntensity]="0.6"
-                                            [side]="THREE.DoubleSide">
-                                        </th-meshPhysicalMaterial>
-                                    </th-mesh>
-                                    <th-mesh [position]="[0, 0, shell.depth / 2]" [rotation]="[0, Math.PI, 0]">
-                                        <th-planeGeometry [args]="[shell.width, shell.height]"></th-planeGeometry>
-                                        <th-meshPhysicalMaterial
-                                            [color]="COLORS.DARK_GRAY"
-                                            [metalness]="0.1"
-                                            [roughness]="0.2"
-                                            [transmission]="0.2"
-                                            [transparent]="true"
-                                            [opacity]="0.35"
-                                            [emissive]="COLORS.CYAN"
-                                            [emissiveIntensity]="0.6"
-                                            [side]="THREE.DoubleSide">
-                                        </th-meshPhysicalMaterial>
-                                    </th-mesh>
+                @for (node of renderNodes(); track node.id) {
+                    <th-group [position]="node.position"
+                        (onPointerOver)="state.hoverNode(node.id, true)"
+                        (onPointerOut)="state.hoverNode(node.id, false)"
+                        (onPointerDown)="onNodeDown($event, node.id)">
+
+                        <ng-container [ngTemplateOutlet]="nodeBody"
+                            [ngTemplateOutletContext]="{ $implicit: node }"></ng-container>
+
+                        <!-- Children (subprocess contents and boundary events) -->
+                        @if (childNodesFor(node.id).length) {
+                            @for (child of childNodesFor(node.id); track child.id) {
+                                <th-group [position]="getChildLocalPosition(child, node)"
+                                    (onPointerOver)="state.hoverNode(child.id, true)"
+                                    (onPointerOut)="state.hoverNode(child.id, false)"
+                                    (onPointerDown)="onNodeDown($event, child.id)">
+
+                                    <ng-container [ngTemplateOutlet]="nodeBody"
+                                        [ngTemplateOutletContext]="{ $implicit: child }"></ng-container>
                                 </th-group>
-                            </ng-container>
-                        </ng-container>
-                        <!-- Outer Shell -->
-                        <th-mesh *ngIf="node.type !== 'subprocess'">
-                            <th-cylinderGeometry *ngIf="isRound(node.type)"
-                                [args]="[0.75, 0.75, 1.25, 32]"></th-cylinderGeometry>
-                            <th-boxGeometry *ngIf="!isRound(node.type)" [args]="[1.2, 1.2, 1.2]"></th-boxGeometry>
-
-                            <th-meshPhysicalMaterial
-                                [color]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? COLORS.HIGHLIGHT : COLORS.BLACK"
-                                [metalness]="0.1" [roughness]="0.4" [transmission]="0.5" [thickness]="1.0"
-                                [transparent]="true"
-                                [emissive]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? COLORS.CYAN : COLORS.DARK_GRAY"
-                                [emissiveIntensity]="(state.selectedNodeIds().includes(node.id) || state.hoveredNodeId() === node.id) ? 2 : 1"
-                                [opacity]="0.7">
-                            </th-meshPhysicalMaterial>
-                        </th-mesh>
-
-                        <!-- Inner Icon -->
-                        <th-mesh>
-                        <th-sphereGeometry *ngIf="node.type === 'start' || node.type === 'messageStart' || node.type === 'messageCatch'" [args]="[0.3, 24, 24]"></th-sphereGeometry>
-                        <th-torusGeometry *ngIf="node.type === 'boundary'" [args]="[0.35, 0.05, 12, 32]"></th-torusGeometry>
-                            <th-cylinderGeometry *ngIf="node.type === 'usertask'"
-                                [args]="[0.15, 0.25, 0.5, 32]"></th-cylinderGeometry>
-                            <th-boxGeometry *ngIf="node.type === 'servicetask' || node.type === 'subprocess'" [args]="[0.5, 0.5, 0.5]"></th-boxGeometry>
-                            <th-octahedronGeometry *ngIf="node.type === 'xgateway' || node.type === 'eventgateway'"
-                                [args]="[0.4]"></th-octahedronGeometry>
-                            <th-capsuleGeometry *ngIf="node.type === 'pgateway'"
-                                [args]="[0.25, 0.25, 4, 8]"></th-capsuleGeometry>
-                            <th-torusGeometry *ngIf="node.type === 'terminal'"
-                                [args]="[0.3, 0.05, 8, 24]"></th-torusGeometry>
-
-                            <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
-                                [emissiveIntensity]="10" [wireframe]="true"></th-meshStandardMaterial>
-                        </th-mesh>
+                            }
+                        }
                     </th-group>
+                }
 
-                    <!-- Label -->
-                    <th-cSS2DObject [position]="[0, 1.5, 0]">
-                        <div class="floating-label" (click)="onLabelClick($event, node.id)">
-                            {{node.type | uppercase}}<span *ngIf="node.multiInstance"> (MI)</span>
-                        </div>
-                    </th-cSS2DObject>
-
-                    <!-- Subprocess Footprint -->
-                    <th-mesh *ngIf="node.type === 'subprocess'" [position]="getSubprocessFootprintPos(node)" [renderOrder]="1">
-                        <th-tubeGeometry [args]="[buildFootprintPath(node), 80, 0.035, 12, true]"></th-tubeGeometry>
-                        <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.28"
-                            [depthTest]="false" [depthWrite]="false"></th-meshBasicMaterial>
-                    </th-mesh>
-
-                <!-- Children (subprocess contents and boundary events) -->
-                <th-group *ngIf="childNodesFor(node.id).length">
-                    <th-group *ngFor="let child of childNodesFor(node.id)" [position]="getChildLocalPosition(child, node)"
-                        (onPointerOver)="state.hoverNode(child.id, true)" (onPointerOut)="state.hoverNode(child.id, false)"
-                        (onPointerDown)="onNodeDown($event, child.id)">
-                        <!-- Physical Node -->
-                        <th-group (onBeforeRender)="onNodeRender($event, child.id)">
-                            <!-- Subprocess Shell (open box) -->
-                            <ng-container *ngIf="child.type === 'subprocess'">
-                                <ng-container *ngIf="getSubprocessShellDims(child, 'outer') as shell">
-                                    <th-group>
-                                        <th-mesh [position]="[-shell.width / 2, 0, 0]" [rotation]="[0, Math.PI / 2, 0]">
-                                            <th-planeGeometry [args]="[shell.depth, shell.height]"></th-planeGeometry>
-                                            <th-meshPhysicalMaterial
-                                                [color]="COLORS.DARK_GRAY"
-                                                [metalness]="0.1"
-                                                [roughness]="0.2"
-                                                [transmission]="0.2"
-                                                [transparent]="true"
-                                                [opacity]="0.35"
-                                                [emissive]="COLORS.CYAN"
-                                                [emissiveIntensity]="0.6"
-                                                [side]="THREE.DoubleSide">
-                                            </th-meshPhysicalMaterial>
-                                        </th-mesh>
-                                        <th-mesh [position]="[shell.width / 2, 0, 0]" [rotation]="[0, -Math.PI / 2, 0]">
-                                            <th-planeGeometry [args]="[shell.depth, shell.height]"></th-planeGeometry>
-                                            <th-meshPhysicalMaterial
-                                                [color]="COLORS.DARK_GRAY"
-                                                [metalness]="0.1"
-                                                [roughness]="0.2"
-                                                [transmission]="0.2"
-                                                [transparent]="true"
-                                                [opacity]="0.35"
-                                                [emissive]="COLORS.CYAN"
-                                                [emissiveIntensity]="0.6"
-                                                [side]="THREE.DoubleSide">
-                                            </th-meshPhysicalMaterial>
-                                        </th-mesh>
-                                        <th-mesh [position]="[0, 0, -shell.depth / 2]">
-                                            <th-planeGeometry [args]="[shell.width, shell.height]"></th-planeGeometry>
-                                            <th-meshPhysicalMaterial
-                                                [color]="COLORS.DARK_GRAY"
-                                                [metalness]="0.1"
-                                                [roughness]="0.2"
-                                                [transmission]="0.2"
-                                                [transparent]="true"
-                                                [opacity]="0.35"
-                                                [emissive]="COLORS.CYAN"
-                                                [emissiveIntensity]="0.6"
-                                                [side]="THREE.DoubleSide">
-                                            </th-meshPhysicalMaterial>
-                                        </th-mesh>
-                                        <th-mesh [position]="[0, 0, shell.depth / 2]" [rotation]="[0, Math.PI, 0]">
-                                            <th-planeGeometry [args]="[shell.width, shell.height]"></th-planeGeometry>
-                                            <th-meshPhysicalMaterial
-                                                [color]="COLORS.DARK_GRAY"
-                                                [metalness]="0.1"
-                                                [roughness]="0.2"
-                                                [transmission]="0.2"
-                                                [transparent]="true"
-                                                [opacity]="0.35"
-                                                [emissive]="COLORS.CYAN"
-                                                [emissiveIntensity]="0.6"
-                                                [side]="THREE.DoubleSide">
-                                            </th-meshPhysicalMaterial>
-                                        </th-mesh>
-                                    </th-group>
-                                </ng-container>
-                            </ng-container>
-                            <!-- Outer Shell -->
-                            <th-mesh *ngIf="child.type !== 'subprocess'">
-                                <th-cylinderGeometry *ngIf="isRound(child.type)"
-                                    [args]="[0.75, 0.75, 1.25, 32]"></th-cylinderGeometry>
-                                <th-boxGeometry *ngIf="!isRound(child.type)" [args]="[1.2, 1.2, 1.2]"></th-boxGeometry>
-
-                                <th-meshPhysicalMaterial
-                                    [color]="(state.selectedNodeIds().includes(child.id) || state.hoveredNodeId() === child.id) ? COLORS.HIGHLIGHT : COLORS.BLACK"
-                                    [metalness]="0.1" [roughness]="0.4" [transmission]="0.5" [thickness]="1.0"
-                                    [transparent]="true"
-                                    [emissive]="(state.selectedNodeIds().includes(child.id) || state.hoveredNodeId() === child.id) ? COLORS.CYAN : COLORS.DARK_GRAY"
-                                    [emissiveIntensity]="(state.selectedNodeIds().includes(child.id) || state.hoveredNodeId() === child.id) ? 2 : 1"
-                                    [opacity]="0.7">
-                                </th-meshPhysicalMaterial>
-                            </th-mesh>
-
-                            <!-- Inner Icon -->
-                            <th-mesh>
-                                <th-sphereGeometry *ngIf="child.type === 'start' || child.type === 'messageStart' || child.type === 'messageCatch'" [args]="[0.3, 24, 24]"></th-sphereGeometry>
-                                <th-torusGeometry *ngIf="child.type === 'boundary'" [args]="[0.35, 0.05, 12, 32]"></th-torusGeometry>
-                                <th-cylinderGeometry *ngIf="child.type === 'usertask'"
-                                    [args]="[0.15, 0.25, 0.5, 32]"></th-cylinderGeometry>
-                                <th-boxGeometry *ngIf="child.type === 'servicetask' || child.type === 'subprocess'" [args]="[0.5, 0.5, 0.5]"></th-boxGeometry>
-                                <th-octahedronGeometry *ngIf="child.type === 'xgateway' || child.type === 'eventgateway'"
-                                    [args]="[0.4]"></th-octahedronGeometry>
-                                <th-capsuleGeometry *ngIf="child.type === 'pgateway'"
-                                    [args]="[0.25, 0.25, 4, 8]"></th-capsuleGeometry>
-                                <th-torusGeometry *ngIf="child.type === 'terminal'"
-                                    [args]="[0.3, 0.05, 8, 24]"></th-torusGeometry>
-
-                                <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
-                                    [emissiveIntensity]="10" [wireframe]="true"></th-meshStandardMaterial>
-                            </th-mesh>
-                        </th-group>
-
-                        <!-- Label -->
-                        <th-cSS2DObject [position]="[0, 1.5, 0]">
-                            <div class="floating-label" (click)="onLabelClick($event, child.id)">
-                                {{child.type | uppercase}}<span *ngIf="child.multiInstance"> (MI)</span>
-                            </div>
-                        </th-cSS2DObject>
-
-                        <!-- Subprocess Footprint -->
-                        <th-mesh *ngIf="child.type === 'subprocess'" [position]="getSubprocessFootprintPos(child)" [renderOrder]="1">
-                            <th-tubeGeometry [args]="[buildFootprintPath(child), 80, 0.035, 12, true]"></th-tubeGeometry>
-                            <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.28"
-                                [depthTest]="false" [depthWrite]="false"></th-meshBasicMaterial>
-                        </th-mesh>
-
-                        <!-- Resize Edge Handles for Child Subprocess -->
-                    </th-group>
-                </th-group>
-            </th-group>
-
-                <!-- Resize Handles (rendered after nodes to avoid event capture) -->
-                <!-- Only show when subprocess is selected or actively resizing -->
-                <th-group *ngFor="let node of renderNodes()">
-                    <ng-container *ngIf="node.type === 'subprocess' && (state.selectedNodeIds().includes(node.id) || resizingNodeId() === node.id)">
-                        <th-group *ngFor="let handle of getSubprocessEdgeHandles(node)">
+                <!-- Resize Handles -->
+                @for (node of renderNodes(); track node.id) {
+                    @if (node.type === 'subprocess' && (state.selectedNodeIds().includes(node.id) || resizingNodeId() === node.id)) {
+                        @for (handle of getSubprocessEdgeHandles(node); track handle.edge) {
                             <th-mesh [position]="getResizeHandleWorldPos(node, handle)" [renderOrder]="999"
                                 (onPointerOver)="onResizeHandleHover($event, node.id, handle.edge, true)"
                                 (onPointerOut)="onResizeHandleHover($event, node.id, handle.edge, false)"
                                 (onPointerDown)="onResizeEdgeDown($event, node.id, handle.edge)"
                                 (onClick)="onResizeHandleClick($event, node.id, handle.edge)">
                                 <th-sphereGeometry [args]="[0.2, 16, 16]"></th-sphereGeometry>
-                                <th-meshBasicMaterial 
+                                <th-meshBasicMaterial
                                     [color]="(hoveredResizeNodeId() === node.id && handle.edge === activeHoveredEdge()) ? resizeHandleHoverColor : resizeHandleColor"
                                     [transparent]="true"
                                     [opacity]="(hoveredResizeNodeId() === node.id && handle.edge === activeHoveredEdge()) ? 1.0 : 0.9"
                                     [depthTest]="true">
                                 </th-meshBasicMaterial>
                             </th-mesh>
-                        </th-group>
-                    </ng-container>
-                </th-group>
+                        }
+                    }
+                }
 
                 <!-- Connections -->
-                <th-group *ngFor="let conn of state.allConnections()">
-                    <!-- Line -->
+                @for (conn of state.allConnections(); track conn.id) {
                     <th-line [geometry]="getConnGeometry(conn)" [renderOrder]="2">
                         <th-lineBasicMaterial [color]="COLORS.CYAN" [transparent]="true"
                             [depthTest]="false" [depthWrite]="false"
@@ -306,45 +195,45 @@
                         </th-lineBasicMaterial>
                     </th-line>
 
-                    <!-- Click Target -->
                     <th-mesh (onPointerOver)="state.hoverConnection(conn.id, true)"
-                        (onPointerOut)="state.hoverConnection(conn.id, false)" (onClick)="onConnClick($event, conn.id)">
+                        (onPointerOut)="state.hoverConnection(conn.id, false)"
+                        (onClick)="onConnClick($event, conn.id)">
                         <th-tubeGeometry [args]="[getConnPath(conn), 20, 0.35, 8, false]"></th-tubeGeometry>
                         <th-meshBasicMaterial [transparent]="true" [opacity]="0"
                             [depthTest]="true"></th-meshBasicMaterial>
                     </th-mesh>
 
-                    <!-- Arrowhead -->
                     <th-mesh [position]="getArrowPos(conn)" [quaternion]="getArrowQuat(conn)">
                         <th-coneGeometry [args]="[0.15, 0.4, 8]"></th-coneGeometry>
                         <th-meshStandardMaterial [color]="COLORS.CYAN" [emissive]="COLORS.CYAN"
                             [emissiveIntensity]="2"></th-meshStandardMaterial>
                     </th-mesh>
 
-                    <!-- Footprints -->
-                    <th-mesh *ngIf="!isSubprocessNode(conn.sourceId)" [position]="getFootprintPos(conn, 'source')" [rotation]="[-Math.PI / 2, 0, 0]">
-                        <th-ringGeometry [args]="[0.7, 0.75, 32]"></th-ringGeometry>
-                        <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.2"
-                            [side]="THREE.DoubleSide"></th-meshBasicMaterial>
-                    </th-mesh>
-                    <th-mesh *ngIf="!isSubprocessNode(conn.targetId)" [position]="getFootprintPos(conn, 'target')" [rotation]="[-Math.PI / 2, 0, 0]">
-                        <th-ringGeometry [args]="[0.7, 0.75, 32]"></th-ringGeometry>
-                        <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.2"
-                            [side]="THREE.DoubleSide"></th-meshBasicMaterial>
-                    </th-mesh>
-                </th-group>
+                    @if (!isSubprocessNode(conn.sourceId)) {
+                        <th-mesh [position]="getFootprintPos(conn, 'source')" [rotation]="[-Math.PI / 2, 0, 0]">
+                            <th-ringGeometry [args]="[0.7, 0.75, 32]"></th-ringGeometry>
+                            <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.2"
+                                [side]="THREE.DoubleSide"></th-meshBasicMaterial>
+                        </th-mesh>
+                    }
+                    @if (!isSubprocessNode(conn.targetId)) {
+                        <th-mesh [position]="getFootprintPos(conn, 'target')" [rotation]="[-Math.PI / 2, 0, 0]">
+                            <th-ringGeometry [args]="[0.7, 0.75, 32]"></th-ringGeometry>
+                            <th-meshBasicMaterial [color]="COLORS.CYAN" [transparent]="true" [opacity]="0.2"
+                                [side]="THREE.DoubleSide"></th-meshBasicMaterial>
+                        </th-mesh>
+                    }
+                }
             </th-group>
-
         </th-scene>
     </th-canvas>
 
-    <!-- UI Overlay -->
     <app-ui-overlay></app-ui-overlay>
 
     <div class="viewport-buttons">
-      <button class="reset-btn" (click)="resetView()">Reset View</button>
-      <button class="reset-btn vr" [disabled]="xrSupported === false" (click)="toggleVr()">
-        {{ xrActive ? 'Exit VR' : 'Enter VR' }}
-      </button>
+        <button class="reset-btn" (click)="resetView()">Reset View</button>
+        <button class="reset-btn vr" [disabled]="xrSupported === false" (click)="toggleVr()">
+            {{ xrActive ? 'Exit VR' : 'Enter VR' }}
+        </button>
     </div>
 </div>

@@ -133,7 +133,6 @@ export class ProcessStateService {
   }
 
   public setNodeType(type: NodeType) {
-    console.log('Setting node type:', type);
     this.currentNodeType.set(type);
     this.statusMessage.set(`Selected Node Type: ${type.toUpperCase()}`);
   }
