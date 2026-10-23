@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Connection, Node } from './process-state.service';
-import { CONNECTION_CONFIG, NODE_CONFIG } from './process-view.constants';
+import { CONNECTION_CONFIG, nodeHalfExtents, nodeShape } from './process-view.constants';
 
 export class ConnectionPathBuilder {
   private nodeOffset: number;
@@ -119,7 +119,11 @@ export class ConnectionPathBuilder {
   }
 
   orthogonalizePath(points: THREE.Vector3[]): THREE.Vector3[] {
-    if (points.length <= 2) return points;
+    if (points.length < 2) return points;
+    if (points.length === 2) {
+      const [a, b] = points;
+      if (Math.abs(a.x - b.x) < 1e-4 || Math.abs(a.z - b.z) < 1e-4) return points;
+    }
     const result: THREE.Vector3[] = [points[0].clone()];
     for (let i = 1; i < points.length; i += 1) {
       const next = points[i];
@@ -214,7 +218,8 @@ export class ConnectionPathBuilder {
 
   private getNodeOffset(node: Node): number {
     if (node.type === 'subprocess') return 0;
-    return CONNECTION_CONFIG.NODE_OFFSET;
+    const { halfW, halfD } = nodeHalfExtents(node.type, node.bounds);
+    return Math.max(halfW, halfD) + 0.1;
   }
 
   private getNodeAnchor(node: Node, toward: THREE.Vector3): THREE.Vector3 {
@@ -236,6 +241,11 @@ export class ConnectionPathBuilder {
   private getWaypointAnchor(node: Node, toward: THREE.Vector3): THREE.Vector3 {
     if (node.type === 'subprocess') {
       return this.getNodeAnchor(node, toward);
+    }
+    if (nodeShape(node.type) === 'box') {
+      const { halfW, halfD } = nodeHalfExtents(node.type, node.bounds);
+      const hit = this.rayRectIntersect(toward, node.position, halfW + 0.05, halfD + 0.05);
+      if (hit) return hit;
     }
     const dir = toward.clone().sub(node.position);
     const len = dir.length();
@@ -263,12 +273,14 @@ export class ConnectionPathBuilder {
   }
 
   private getFootprintHit(node: Node, from: THREE.Vector3): THREE.Vector3 | null {
+    const { halfW, halfD } = nodeHalfExtents(node.type, node.bounds);
     if (node.type === 'subprocess') {
-      const shell = this.getSubprocessShellDims(node, 'outer');
-      return this.rayRectIntersect(from, node.position, shell.width / 2, shell.depth / 2);
+      return this.rayRectIntersect(from, node.position, halfW, halfD);
     }
-    const radius = 0.75;
-    return this.rayCircleIntersect(from, node.position, radius);
+    if (nodeShape(node.type) === 'box') {
+      return this.rayRectIntersect(from, node.position, halfW + 0.05, halfD + 0.05);
+    }
+    return this.rayCircleIntersect(from, node.position, halfW + 0.1);
   }
 
   private rayCircleIntersect(from: THREE.Vector3, center: THREE.Vector3, radius: number): THREE.Vector3 | null {
@@ -298,31 +310,8 @@ export class ConnectionPathBuilder {
   }
 
   private getNodeHalfExtents(node: Node): { halfW: number; halfD: number; radius: number } {
-    if (node.type === 'subprocess') {
-      const shell = this.getSubprocessShellDims(node, 'outer');
-      return { halfW: shell.width / 2, halfD: shell.depth / 2, radius: Math.min(shell.width, shell.depth) * 0.5 };
-    }
-    const square = 1.2;
-    const round = 0.75 * 2;
-    const useRound = this.isRound(node.type);
-    const size = useRound ? round : square;
-    const half = size / 2;
-    return { halfW: half, halfD: half, radius: size * 0.5 };
-  }
-
-  private isRound(type: string): boolean {
-    return type === 'start' || type === 'terminal' || type.endsWith('gateway') || type === 'messageStart' || type === 'messageCatch' || type === 'boundary';
-  }
-
-  private getSubprocessShellDims(node: Node, layer: 'outer' | 'inner'): { width: number; height: number; depth: number } {
-    const baseW = node.bounds?.width ?? 4;
-    const baseD = node.bounds?.height ?? 3;
-    const scale = layer === 'outer' ? 1.05 : 0.95;
-    return {
-      width: baseW * scale,
-      height: 1.6,
-      depth: baseD * scale
-    };
+    const { halfW, halfD } = nodeHalfExtents(node.type, node.bounds);
+    return { halfW, halfD, radius: Math.min(halfW, halfD) };
   }
 }
 

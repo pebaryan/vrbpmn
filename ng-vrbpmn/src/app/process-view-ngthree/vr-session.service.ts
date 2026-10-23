@@ -1,554 +1,673 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { ProcessStateService } from './process-state.service';
-import { ThEngineService } from 'ngx-three';
-import { ChangeDetectorRef } from '@angular/core';
+import { ThAnimationLoopService, ThEngineService } from 'ngx-three';
 import * as THREE from 'three';
-import { CAMERA_CONFIG } from './process-view.constants';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { InteractionMode, Node, NodeType, ProcessStateService } from './process-state.service';
+import { NODE_CONFIG, NODE_TYPE_META, PALETTE_GROUPS, nodeHalfExtents } from './process-view.constants';
 
-function resolveThreeObject<T = THREE.Object3D>(ref: any): T | null {
-  return ref?.object3d ?? ref?.object3D ?? ref?.threeObject ?? ref?._objRef ?? ref?.camera ?? null;
+export interface VrContext {
+  renderer: THREE.WebGLRenderer;
+  camera: THREE.PerspectiveCamera;
+  scene: THREE.Scene;
+  /** Group that contains the whole diagram; VR moves/scales/rotates it instead of the nodes. */
+  world: THREE.Group;
+  engine: ThEngineService;
+  controls?: OrbitControls;
+  loop?: ThAnimationLoopService;
 }
+
+type VrHit =
+  | { kind: 'node'; nodeId: string; point: THREE.Vector3; distance: number }
+  | { kind: 'ground'; point: THREE.Vector3; distance: number };
+
+interface ControllerState {
+  controller: THREE.XRTargetRaySpace;
+  grip: THREE.XRGripSpace;
+  ray: THREE.Line;
+  input: XRInputSource | null;
+  hit: VrHit | null;
+  grabbedNodeId: string | null;
+  grabOffset: THREE.Vector3;
+  grabPlaneY: number;
+  grabMoved: boolean;
+  prevButtons: boolean[];
+  turnArmed: boolean;
+  listeners: Array<[string, (event: any) => void]>;
+}
+
+const MODES: InteractionMode[] = ['move', 'add', 'link', 'delete'];
+const PALETTE: NodeType[] = PALETTE_GROUPS.flatMap(group => group.types);
+const MOVE_SPEED = 2.2; // metres per second
+const SNAP_TURN = Math.PI / 6;
+const DIAGRAM_EYE_LEVEL = 1.1;
+const RAY_LENGTH = 6;
 
 @Injectable({ providedIn: 'root' })
 export class VrSessionService {
-  private processState = inject(ProcessStateService);
+  private state = inject(ProcessStateService);
 
-  private cameraRef: any = null;
-  private controlsRef: any = null;
-  private rendererRef: any = null;
-  private sceneRef: any = null;
-  private nodeObjectMap = new Map<string, THREE.Object3D>();
-  private engineRef: any = null;
-  private cdrRef: ChangeDetectorRef | null = null;
-  private onNodeSelected: ((nodeId: string | null) => void) | null = null;
-  private onVrSessionEnd: (() => void) | null = null;
+  readonly xrSupported = signal<boolean | null>(null);
+  readonly xrActive = signal(false);
 
-  xrActive = signal(false);
-  xrSupported: boolean | null = null;
+  private ctx: VrContext | null = null;
+  private session: XRSession | null = null;
+  private controllers: ControllerState[] = [];
+  private raycaster = new THREE.Raycaster();
+  private lastTime = 0;
+  private savedCamera: { position: THREE.Vector3; target: THREE.Vector3 | null } | null = null;
 
-  private xrSession: any = null;
-  private xrRenderer: any = null;
-  private xrSelectHandler: ((event: any) => void) | undefined;
-  private lastCamera: THREE.Camera | null = null;
-
-  private prevCameraPos: THREE.Vector3 | null = null;
-  private prevControlsTarget: THREE.Vector3 | null = null;
-  private prevNodePositions: Map<string, THREE.Vector3> | null = null;
-
-  private rigGroup: THREE.Group | null = null;
+  private labelGroup: THREE.Group | null = null;
+  private labels = new Map<string, { sprite: THREE.Sprite; key: string; texture: THREE.CanvasTexture }>();
+  private hud: { mesh: THREE.Mesh; texture: THREE.CanvasTexture; key: string } | null = null;
   private teleportMarker: THREE.Mesh | null = null;
-  private readonly TELEPORT_RANGE = 20;
-  private readonly MOVE_SPEED = 3;
-  private readonly SNAP_TURN_ANGLE = Math.PI / 4;
-  private lastSnapTurnTime = 0;
-  private readonly SNAP_TURN_COOLDOWN = 300;
 
-  setReferences(cameraRef: any, controlsRef: any, rendererRef: any, sceneRef: any, engineRef: any, cdrRef: ChangeDetectorRef) {
-    this.cameraRef = cameraRef;
-    this.controlsRef = controlsRef;
-    this.rendererRef = rendererRef;
-    this.sceneRef = sceneRef;
-    this.engineRef = engineRef;
-    this.cdrRef = cdrRef;
+  attach(ctx: VrContext) {
+    this.ctx = ctx;
   }
 
-  setNodeObjectMap(nodeObjectMap: Map<string, THREE.Object3D>) {
-    this.nodeObjectMap = nodeObjectMap;
-  }
-
-  setOnNodeSelected(callback: (nodeId: string | null) => void) {
-    this.onNodeSelected = callback;
-  }
-
-  setOnVrSessionEnd(callback: () => void) {
-    this.onVrSessionEnd = callback;
+  detach() {
+    if (this.session) {
+      this.session.end().catch(() => undefined);
+    }
+    this.ctx = null;
   }
 
   async checkSupport() {
-    if (!('xr' in navigator)) {
-      this.xrSupported = false;
+    const xr = (navigator as Navigator & { xr?: XRSystem }).xr;
+    if (!xr) {
+      this.xrSupported.set(false);
       return;
     }
     try {
-      const supported = await (navigator as any).xr?.isSessionSupported?.('immersive-vr');
-      this.xrSupported = !!supported;
-      this.cdrRef?.markForCheck();
+      this.xrSupported.set(await xr.isSessionSupported('immersive-vr'));
     } catch {
-      this.xrSupported = false;
-      this.cdrRef?.markForCheck();
+      this.xrSupported.set(false);
     }
   }
 
   async toggleVr() {
-    if (this.xrActive()) {
-      await this.endVrSession();
+    if (this.session) {
+      await this.session.end().catch(() => undefined);
       return;
     }
-
-    if (!this.xrSupported) {
-      this.processState.statusMessage.set('WebXR not available.');
+    const xr = (navigator as Navigator & { xr?: XRSystem }).xr;
+    if (!this.xrSupported() || !xr) {
+      this.state.statusMessage.set('WebXR is not available on this device.');
+      return;
+    }
+    const ctx = this.ctx;
+    if (!ctx) {
+      this.state.statusMessage.set('The 3D scene is not ready yet.');
       return;
     }
 
     try {
-      const renderer = this.getRenderer();
-      if (!renderer) {
-        this.processState.statusMessage.set('XR renderer not available.');
-        return;
-      }
-
-      this.xrRenderer = renderer;
-      this.storeCameraState();
-      this.applyVrSceneOffset();
-
-      if (renderer.xr) {
-        renderer.xr.enabled = true;
-        renderer.xr.setReferenceSpaceType?.('local-floor');
-      }
-
-      const session = await (navigator as any).xr.requestSession('immersive-vr', {
+      const session = await xr.requestSession('immersive-vr', {
         optionalFeatures: ['local-floor', 'bounded-floor']
       });
+      this.session = session;
+      this.saveCameraState();
+      ctx.loop?.stop();
+      if (ctx.controls) ctx.controls.enabled = false;
 
-      this.patchRendererSetSize(renderer, true);
-      await renderer.xr?.setSession?.(session);
-      renderer.xr.enabled = true;
+      ctx.renderer.xr.enabled = true;
+      ctx.renderer.xr.setReferenceSpaceType('local-floor');
+      await ctx.renderer.xr.setSession(session);
 
+      this.layoutWorld();
+      this.setupControllers();
       this.createTeleportMarker();
-      this.setupLocomotionControllers(session);
+      this.labelGroup = new THREE.Group();
+      this.labelGroup.name = 'vr-labels';
+      ctx.world.add(this.labelGroup);
+      this.createHud();
 
-      renderer.setAnimationLoop?.((time: number) => {
-        this.updateLocomotion(time);
-        const sceneObj = resolveThreeObject(this.sceneRef);
-        const camObj = resolveThreeObject<THREE.Camera>(this.cameraRef) ?? this.lastCamera;
-        if (sceneObj && camObj) {
-          renderer.render(sceneObj, camObj);
-        } else {
-          this.engineRef.render();
-        }
-      });
+      session.addEventListener('end', () => this.onSessionEnd());
+      this.lastTime = 0;
+      ctx.renderer.setAnimationLoop(time => this.onXrFrame(time));
 
-      this.xrSession = session;
       this.xrActive.set(true);
-      this.attachVrSelectHandler(session);
-
-      session.addEventListener('end', () => {
-        this.xrActive.set(false);
-        this.xrSession = null;
-        this.cleanupLocomotion();
-        renderer.xr?.setSession?.(null);
-        this.patchRendererSetSize(renderer, false);
-        renderer.xr.enabled = false;
-        renderer.setAnimationLoop?.(null);
-        this.detachVrSelectHandler(session);
-        this.xrRenderer = null;
-        this.restoreVrSceneOffset();
-        this.restoreCameraState();
-        this.processState.statusMessage.set('Exited VR session.');
-        this.onVrSessionEnd?.();
-        this.cdrRef?.markForCheck();
-      });
-
-      this.processState.statusMessage.set('Entered VR. Thumbstick: move/turn. Squeeze: teleport. Trigger: select nodes for details.');
-      this.cdrRef?.markForCheck();
-    } catch (err: any) {
-      console.error(err);
-      this.processState.statusMessage.set('Failed to start VR session.');
-    }
-  }
-
-  private createTeleportMarker() {
-    const geometry = new THREE.RingGeometry(0.3, 0.4, 32);
-    geometry.rotateX(-Math.PI / 2);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0x00ffff,
-      transparent: true,
-      opacity: 0.7,
-      depthTest: false
-    });
-    this.teleportMarker = new THREE.Mesh(geometry, material);
-    this.teleportMarker.visible = false;
-    this.teleportMarker.renderOrder = 999;
-
-    const sceneObj = resolveThreeObject(this.sceneRef);
-    if (sceneObj) {
-      sceneObj.add(this.teleportMarker);
-    }
-  }
-
-  private setupLocomotionControllers(session: any) {
-    session.addEventListener('inputsourceschange', () => {
-      this.updateControllerTargets();
-    });
-    this.updateControllerTargets();
-  }
-
-  private updateControllerTargets() {
-    if (!this.xrRenderer?.xr) return;
-
-    const sources = this.xrRenderer.xr.getControllerGrips();
-    const inputSources = this.xrRenderer.xr.getInputSources();
-
-    for (let i = 0; i < sources.length; i++) {
-      const grip = sources[i];
-      const input = inputSources?.[i];
-
-      if (grip && input) {
-        grip.addEventListener('selectstart', () => this.onTeleportSelect(true));
-        grip.addEventListener('selectend', () => this.onTeleportSelect(false));
-        grip.addEventListener('squeezestart', () => this.executeTeleport());
-      }
-    }
-  }
-
-  private teleportController: THREE.Object3D | null = null;
-  private isTeleportActive = false;
-
-  private onTeleportSelect(active: boolean) {
-    if (active) {
-      this.isTeleportActive = true;
-    }
-  }
-
-  private executeTeleport() {
-    if (!this.teleportMarker?.visible || !this.rigGroup) return;
-
-    const targetPos = this.teleportMarker.position.clone();
-    this.rigGroup.position.set(targetPos.x, 0, targetPos.z);
-    this.processState.statusMessage.set('Teleported');
-  }
-
-  private updateLocomotion(time: number) {
-    if (!this.xrRenderer?.xr || !this.rigGroup) {
-      this.updateRigReference();
-    }
-
-    const inputSources = this.xrRenderer.xr.getInputSources();
-    if (!inputSources) return;
-
-    for (const input of inputSources) {
-      if (!input.gamepad) continue;
-
-      const axes = input.gamepad.axes;
-      const thumbstickX = axes[2] ?? axes[0] ?? 0;
-      const thumbstickY = axes[3] ?? axes[1] ?? 0;
-
-      if (Math.abs(thumbstickX) > 0.1 || Math.abs(thumbstickY) > 0.1) {
-        this.applyThumbstickMovement(thumbstickX, thumbstickY);
-      }
-
-      if (Math.abs(thumbstickX) > 0.8) {
-        this.applySnapTurn(Math.sign(thumbstickX), time);
-      }
-
-      if (this.isTeleportActive && input.handedness) {
-        this.updateTeleportPreview(input.handedness);
-      }
-
-      if (!this.isTeleportActive && this.teleportMarker) {
-        this.teleportMarker.visible = false;
-      }
-
-      this.isTeleportActive = false;
-    }
-  }
-
-  private updateRigReference() {
-    const camObj = resolveThreeObject(this.cameraRef);
-    if (camObj?.parent) {
-      this.rigGroup = camObj.parent as THREE.Group;
-    }
-  }
-
-  private applyThumbstickMovement(x: number, y: number) {
-    if (!this.rigGroup || !this.cameraRef) return;
-
-    const camObj = resolveThreeObject(this.cameraRef);
-    if (!camObj) return;
-
-    const forward = new THREE.Vector3(0, 0, -1);
-    forward.applyQuaternion(camObj.quaternion);
-    forward.y = 0;
-    forward.normalize();
-
-    const right = new THREE.Vector3(1, 0, 0);
-    right.applyQuaternion(camObj.quaternion);
-    right.y = 0;
-    right.normalize();
-
-    const moveDir = new THREE.Vector3();
-    moveDir.addScaledVector(forward, -y);
-    moveDir.addScaledVector(right, x);
-    moveDir.normalize();
-
-    const delta = moveDir.multiplyScalar(this.MOVE_SPEED * 0.016);
-    this.rigGroup.position.add(delta);
-  }
-
-  private applySnapTurn(direction: number, time: number) {
-    if (!this.cameraRef || time - this.lastSnapTurnTime < this.SNAP_TURN_COOLDOWN) return;
-
-    const camObj = resolveThreeObject(this.cameraRef);
-    if (!camObj) return;
-
-    camObj.rotateY(direction * this.SNAP_TURN_ANGLE);
-    this.lastSnapTurnTime = time;
-  }
-
-  private updateTeleportPreview(handedness: string) {
-    if (!this.xrRenderer?.xr || !this.teleportMarker) return;
-
-    const controllers = this.xrRenderer.xr.getControllerGrips();
-    const inputSources = this.xrRenderer.xr.getInputSources();
-    let controller: THREE.Object3D | null = null;
-
-    for (let i = 0; i < controllers.length; i++) {
-      if (inputSources?.[i]?.handedness === handedness) {
-        controller = controllers[i];
-        break;
-      }
-    }
-
-    if (!controller) return;
-
-    const origin = new THREE.Vector3();
-    const direction = new THREE.Vector3(0, -1, 0);
-    controller.getWorldPosition(origin);
-    controller.getWorldDirection(direction);
-
-    const raycaster = new THREE.Raycaster(origin, direction);
-    raycaster.far = this.TELEPORT_RANGE;
-
-    const sceneObj = resolveThreeObject(this.sceneRef);
-    if (!sceneObj) return;
-
-    const ground = sceneObj.getObjectByName('ground');
-    const intersects = ground
-      ? raycaster.intersectObject(ground, true)
-      : raycaster.intersectObject(sceneObj, true);
-
-    const validHit = intersects.find(hit => {
-      const obj = hit.object;
-      return obj.name === 'ground' || (obj.parent?.name === 'ground');
-    });
-
-    if (validHit) {
-      this.teleportMarker.position.copy(validHit.point);
-      this.teleportMarker.visible = true;
-    } else {
-      this.teleportMarker.visible = false;
-    }
-  }
-
-  private cleanupLocomotion() {
-    if (this.teleportMarker) {
-      this.teleportMarker.visible = false;
-      const sceneObj = resolveThreeObject(this.sceneRef);
-      if (sceneObj && this.teleportMarker.parent === sceneObj) {
-        sceneObj.remove(this.teleportMarker);
-      }
-      this.teleportMarker.geometry?.dispose();
-      (this.teleportMarker.material as THREE.Material)?.dispose();
-      this.teleportMarker = null;
-    }
-    this.rigGroup = null;
-  }
-
-  private async endVrSession() {
-    let endSession: any = null;
-    try {
-      const renderer = this.getRenderer();
-      endSession = this.xrSession || renderer?.xr?.getSession?.();
-      if (endSession) {
-        await endSession.end();
-      } else if (renderer) {
-        renderer.xr?.setSession?.(null);
-        renderer.xr.enabled = false;
-        renderer.setAnimationLoop?.(null);
-        this.restoreCameraState();
-      }
+      this.state.statusMessage.set('Entered VR. Trigger: select / drag · Squeeze: teleport · A/X: mode · B/Y: element type.');
     } catch (err) {
       console.error(err);
-    } finally {
-      this.xrSession = null;
-      this.xrActive.set(false);
-      if (endSession) this.detachVrSelectHandler(endSession);
-      this.xrRenderer = null;
-      this.processState.statusMessage.set('Exited VR session.');
-      this.cdrRef?.markForCheck();
+      this.session = null;
+      this.restoreDesktop();
+      this.state.statusMessage.set('Failed to start VR session.');
     }
   }
 
-  resetView() {
-    const cam = resolveThreeObject<THREE.PerspectiveCamera>(this.cameraRef);
+  // ── Session lifecycle ──
 
-    if (cam) {
-      cam.position.copy(CAMERA_CONFIG.POSITION);
-      cam.lookAt(CAMERA_CONFIG.LOOK_AT);
-      (cam as THREE.PerspectiveCamera).updateProjectionMatrix();
-      this.lastCamera = cam;
-    }
-
-    const controls: any = (this.controlsRef as any)?._objRef ?? (this.controlsRef as any);
-    if (controls) {
-      if (controls.target?.set) {
-        controls.target.set(CAMERA_CONFIG.LOOK_AT.x, CAMERA_CONFIG.LOOK_AT.y, CAMERA_CONFIG.LOOK_AT.z);
-      }
-      controls.update?.();
-    }
+  private onSessionEnd() {
+    this.session = null;
+    this.restoreDesktop();
+    this.state.statusMessage.set('Exited VR session.');
   }
 
-  private storeCameraState() {
-    const cam = resolveThreeObject(this.cameraRef);
-
-    if (cam) {
-      this.prevCameraPos = cam.position.clone();
+  private restoreDesktop() {
+    const ctx = this.ctx;
+    this.xrActive.set(false);
+    this.teardownControllers();
+    this.disposeLabels();
+    this.disposeHud();
+    if (this.teleportMarker) {
+      this.teleportMarker.removeFromParent();
+      this.teleportMarker.geometry.dispose();
+      (this.teleportMarker.material as THREE.Material).dispose();
+      this.teleportMarker = null;
     }
+    if (!ctx) return;
+    ctx.renderer.setAnimationLoop(null);
+    ctx.renderer.xr.enabled = false;
+    ctx.world.position.set(0, 0, 0);
+    ctx.world.quaternion.identity();
+    ctx.world.scale.setScalar(1);
+    this.restoreCameraState();
+    if (ctx.controls) ctx.controls.enabled = true;
+    ctx.engine.resize();
+    ctx.loop?.start();
+  }
 
-    const controls: any = (this.controlsRef as any)?._objRef ?? (this.controlsRef as any);
-    if (controls?.target) {
-      this.prevControlsTarget = controls.target.clone?.() ?? null;
-    }
+  private saveCameraState() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    this.savedCamera = {
+      position: ctx.camera.position.clone(),
+      target: ctx.controls?.target.clone() ?? null
+    };
   }
 
   private restoreCameraState() {
-    const cam = resolveThreeObject(this.cameraRef);
-
-    if (cam && this.prevCameraPos) {
-      cam.position.copy(this.prevCameraPos);
-      cam.lookAt(CAMERA_CONFIG.LOOK_AT);
-      (cam as THREE.PerspectiveCamera).updateProjectionMatrix();
+    const ctx = this.ctx;
+    if (!ctx || !this.savedCamera) return;
+    ctx.camera.position.copy(this.savedCamera.position);
+    if (ctx.controls && this.savedCamera.target) {
+      ctx.controls.target.copy(this.savedCamera.target);
+      ctx.controls.update();
+    } else {
+      ctx.camera.lookAt(0, 0, 0);
     }
+    this.savedCamera = null;
+  }
 
-    const controls: any = (this.controlsRef as any)?._objRef ?? (this.controlsRef as any);
-    if (controls && this.prevControlsTarget) {
-      controls.target.set(this.prevControlsTarget.x, this.prevControlsTarget.y, this.prevControlsTarget.z);
-      controls.update?.();
+  /** Places the diagram in front of the user at roughly table height, scaled to fit. */
+  private layoutWorld() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const nodes = this.state.allNodes();
+    let minX = -3, maxX = 3, minZ = -2, maxZ = 2;
+    if (nodes.length) {
+      minX = Infinity; maxX = -Infinity; minZ = Infinity; maxZ = -Infinity;
+      nodes.forEach(node => {
+        const { halfW, halfD } = nodeHalfExtents(node.type, node.bounds);
+        minX = Math.min(minX, node.position.x - halfW);
+        maxX = Math.max(maxX, node.position.x + halfW);
+        minZ = Math.min(minZ, node.position.z - halfD);
+        maxZ = Math.max(maxZ, node.position.z + halfD);
+      });
     }
-
-    this.prevCameraPos = null;
-    this.prevControlsTarget = null;
+    const width = maxX - minX;
+    const depth = maxZ - minZ;
+    const scale = THREE.MathUtils.clamp(4 / Math.max(width, depth, 1), 0.15, 0.5);
+    const cx = (minX + maxX) / 2;
+    const cz = (minZ + maxZ) / 2;
+    ctx.world.quaternion.identity();
+    ctx.world.scale.setScalar(scale);
+    ctx.world.position.set(-cx * scale, DIAGRAM_EYE_LEVEL, -cz * scale - (depth * scale) / 2 - 0.8);
   }
 
-  private computeSceneOffset(): [number, number, number] {
-    const nodes = this.processState.allNodes();
-    if (!nodes.length) return [0, 0, 0];
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minZ = Infinity;
-    let maxZ = -Infinity;
-    nodes.forEach(node => {
-      minX = Math.min(minX, node.position.x);
-      maxX = Math.max(maxX, node.position.x);
-      minZ = Math.min(minZ, node.position.z);
-      maxZ = Math.max(maxZ, node.position.z);
+  // ── Controllers ──
+
+  private setupControllers() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    this.teardownControllers();
+    for (let i = 0; i < 2; i += 1) {
+      const controller = ctx.renderer.xr.getController(i);
+      const grip = ctx.renderer.xr.getControllerGrip(i);
+
+      const ray = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]),
+        new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.8 })
+      );
+      ray.name = 'vr-ray';
+      ray.scale.z = RAY_LENGTH;
+      controller.add(ray);
+
+      const gripMarker = new THREE.Mesh(
+        new THREE.BoxGeometry(0.03, 0.03, 0.12),
+        new THREE.MeshBasicMaterial({ color: 0x0b2630, wireframe: true })
+      );
+      gripMarker.name = 'vr-grip-marker';
+      grip.add(gripMarker);
+
+      ctx.scene.add(controller, grip);
+
+      const state: ControllerState = {
+        controller,
+        grip,
+        ray,
+        input: null,
+        hit: null,
+        grabbedNodeId: null,
+        grabOffset: new THREE.Vector3(),
+        grabPlaneY: 0,
+        grabMoved: false,
+        prevButtons: [],
+        turnArmed: true,
+        listeners: []
+      };
+      const listen = (type: string, handler: (event: any) => void) => {
+        controller.addEventListener(type as any, handler);
+        state.listeners.push([type, handler]);
+      };
+      listen('connected', (event: { data: XRInputSource }) => {
+        state.input = event.data;
+      });
+      listen('disconnected', () => {
+        state.input = null;
+        state.grabbedNodeId = null;
+      });
+      listen('selectstart', () => this.onSelectStart(state));
+      listen('selectend', () => this.onSelectEnd(state));
+      listen('squeezestart', () => this.onSqueezeStart(state));
+      this.controllers.push(state);
+    }
+  }
+
+  private teardownControllers() {
+    this.controllers.forEach(state => {
+      state.listeners.forEach(([type, handler]) => state.controller.removeEventListener(type as any, handler));
+      [state.ray, state.grip.getObjectByName('vr-grip-marker')].forEach(obj => {
+        if (!obj) return;
+        obj.removeFromParent();
+        const mesh = obj as THREE.Mesh;
+        mesh.geometry?.dispose();
+        (mesh.material as THREE.Material | undefined)?.dispose();
+      });
+      state.controller.removeFromParent();
+      state.grip.removeFromParent();
     });
-    const centerX = (minX + maxX) / 2;
-    const centerZ = (minZ + maxZ) / 2;
-    const depth = 3.5;
-    return [-centerX, 0, -centerZ - depth];
+    this.controllers = [];
   }
 
-  private applyVrSceneOffset() {
-    const nodes = this.processState.allNodes();
-    if (!nodes.length) return;
-
-    const offset = this.computeSceneOffset();
-    this.prevNodePositions = new Map();
-
-    nodes.forEach(node => {
-      this.prevNodePositions?.set(node.id, node.position.clone());
-      const next = node.position.clone().add(new THREE.Vector3(offset[0], offset[1], offset[2]));
-      this.processState.moveNode(node.id, next);
-    });
+  private nodeGroups(): THREE.Object3D[] {
+    return this.ctx?.world.children.filter(child => !!child.userData['nodeId']) ?? [];
   }
 
-  private restoreVrSceneOffset() {
-    if (!this.prevNodePositions) return;
-    this.prevNodePositions.forEach((pos, id) => {
-      this.processState.moveNode(id, pos);
-    });
-    this.prevNodePositions = null;
+  private pick(state: ControllerState): VrHit | null {
+    const ctx = this.ctx;
+    if (!ctx) return null;
+    this.raycaster.setFromXRController(state.controller);
+    this.raycaster.far = 50;
+
+    const nodeHit = this.raycaster.intersectObjects(this.nodeGroups(), true)[0];
+    if (nodeHit) {
+      let obj: THREE.Object3D | null = nodeHit.object;
+      while (obj && !obj.userData['nodeId']) obj = obj.parent;
+      if (obj) {
+        return { kind: 'node', nodeId: obj.userData['nodeId'], point: nodeHit.point.clone(), distance: nodeHit.distance };
+      }
+    }
+    const ground = ctx.world.getObjectByName('ground');
+    const groundHit = ground ? this.raycaster.intersectObject(ground, false)[0] : undefined;
+    if (groundHit) {
+      return { kind: 'ground', point: groundHit.point.clone(), distance: groundHit.distance };
+    }
+    return null;
   }
 
-  private getRenderer(): any {
-    return (
-      (this.cameraRef as any)?._renderer ??
-      (this.cameraRef as any)?.renderer ??
-      (this.engineRef as any)?.webglRenderer ??
-      (this.engineRef as any)?.webglRenderer ??
-      null
+  /** Intersects a controller ray with a horizontal plane expressed in world-group (diagram) coordinates. */
+  private rayToLocalPlane(state: ControllerState, planeY: number): THREE.Vector3 | null {
+    const ctx = this.ctx;
+    if (!ctx) return null;
+    this.raycaster.setFromXRController(state.controller);
+    const inverse = ctx.world.matrixWorld.clone().invert();
+    const localRay = this.raycaster.ray.clone().applyMatrix4(inverse);
+    const hit = new THREE.Vector3();
+    return localRay.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY), hit) ? hit : null;
+  }
+
+  private toLocal(point: THREE.Vector3): THREE.Vector3 {
+    return this.ctx ? this.ctx.world.worldToLocal(point.clone()) : point.clone();
+  }
+
+  private snap(point: THREE.Vector3): THREE.Vector3 {
+    if (this.state.snapToGrid()) {
+      point.x = Math.round(point.x / NODE_CONFIG.SNAP_STEP) * NODE_CONFIG.SNAP_STEP;
+      point.z = Math.round(point.z / NODE_CONFIG.SNAP_STEP) * NODE_CONFIG.SNAP_STEP;
+    }
+    return point;
+  }
+
+  private onSelectStart(state: ControllerState) {
+    const hit = this.pick(state);
+    const mode = this.state.interactionMode();
+    if (hit?.kind === 'node') {
+      const node = this.state.nodeById().get(hit.nodeId);
+      if (!node) return;
+      if (mode === 'move') {
+        this.state.selectOnly(node.id);
+        if (node.type !== 'boundary') this.beginGrab(state, node);
+      } else if (mode === 'add') {
+        if (this.state.currentNodeType() === 'boundary') {
+          this.state.attachBoundary(node.id);
+        } else if (node.type === 'subprocess') {
+          this.addAt(this.toLocal(hit.point));
+        } else {
+          this.state.selectOnly(node.id);
+        }
+      } else {
+        this.state.selectNode(node.id);
+      }
+      return;
+    }
+    if (hit?.kind === 'ground') {
+      if (mode === 'add') {
+        if (this.state.currentNodeType() === 'boundary') {
+          this.state.statusMessage.set('Point at a task or subprocess to attach the boundary event.');
+        } else {
+          this.addAt(this.toLocal(hit.point));
+        }
+      } else if (mode === 'move' || mode === 'link') {
+        this.state.clearSelection();
+      }
+    }
+  }
+
+  private addAt(local: THREE.Vector3) {
+    const position = this.snap(new THREE.Vector3(local.x, 0, local.z));
+    this.state.addNode(position, this.state.findContainerAt(position.x, position.z));
+  }
+
+  private beginGrab(state: ControllerState, node: Node) {
+    const planePoint = this.rayToLocalPlane(state, node.position.y);
+    state.grabbedNodeId = node.id;
+    state.grabPlaneY = node.position.y;
+    state.grabOffset = planePoint ? node.position.clone().sub(planePoint) : new THREE.Vector3();
+    state.grabMoved = false;
+  }
+
+  private updateGrab(state: ControllerState) {
+    if (!state.grabbedNodeId) return;
+    const node = this.state.nodeById().get(state.grabbedNodeId);
+    const planePoint = this.rayToLocalPlane(state, state.grabPlaneY);
+    if (!node || !planePoint) return;
+    const next = this.snap(planePoint.add(state.grabOffset));
+    next.y = node.position.y;
+    if (next.distanceToSquared(node.position) < 1e-6) return;
+    if (!state.grabMoved) {
+      this.state.checkpoint();
+      state.grabMoved = true;
+    }
+    this.state.moveNode(node.id, next);
+  }
+
+  private onSelectEnd(state: ControllerState) {
+    const id = state.grabbedNodeId;
+    state.grabbedNodeId = null;
+    if (!id || !state.grabMoved) return;
+    const node = this.state.nodeById().get(id);
+    if (!node) return;
+    const exclude = this.state.descendantIds(id);
+    exclude.add(id);
+    const container = this.state.findContainerAt(node.position.x, node.position.z, exclude);
+    if (container !== (node.parentId ?? null)) this.state.setParent(id, container);
+  }
+
+  private onSqueezeStart(state: ControllerState) {
+    const ctx = this.ctx;
+    const hit = this.pick(state);
+    if (!ctx || hit?.kind !== 'ground') return;
+    const head = this.headPosition();
+    ctx.world.position.x -= hit.point.x - head.x;
+    ctx.world.position.z -= hit.point.z - head.z;
+  }
+
+  private headPosition(): THREE.Vector3 {
+    const ctx = this.ctx!;
+    const xrCamera = ctx.renderer.xr.getCamera();
+    return new THREE.Vector3().setFromMatrixPosition(xrCamera.matrixWorld);
+  }
+
+  private createTeleportMarker() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const geometry = new THREE.RingGeometry(0.18, 0.24, 32);
+    geometry.rotateX(-Math.PI / 2);
+    this.teleportMarker = new THREE.Mesh(
+      geometry,
+      new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.7, depthTest: false })
     );
+    this.teleportMarker.renderOrder = 999;
+    this.teleportMarker.visible = false;
+    ctx.scene.add(this.teleportMarker);
   }
 
-  private patchRendererSetSize(renderer: any, disable: boolean) {
-    if (!renderer) return;
-    if (disable) {
-      if (!renderer.__origSetSize) {
-        renderer.__origSetSize = renderer.setSize;
-        renderer.setSize = function (w: any, h: any, updateStyle?: any) {
-          if (this.xr?.isPresenting) return this;
-          return renderer.__origSetSize.call(this, w, h, updateStyle);
-        };
+  // ── Per-frame update ──
+
+  private onXrFrame(time: number) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const dt = this.lastTime ? Math.min((time - this.lastTime) / 1000, 0.1) : 0;
+    this.lastTime = time;
+
+    let hoveredNode: string | null = null;
+    let groundHit: THREE.Vector3 | null = null;
+    for (const state of this.controllers) {
+      if (!state.input) {
+        state.ray.visible = false;
+        continue;
       }
-    } else if (renderer.__origSetSize) {
-      renderer.setSize = renderer.__origSetSize;
-      delete renderer.__origSetSize;
+      state.ray.visible = true;
+      state.hit = this.pick(state);
+      state.ray.scale.z = state.hit?.distance ?? RAY_LENGTH;
+      if (state.hit?.kind === 'node') hoveredNode ??= state.hit.nodeId;
+      if (state.hit?.kind === 'ground' && !groundHit) groundHit = state.hit.point;
+      this.updateGrab(state);
+      this.handleGamepad(state, dt);
     }
+
+    if (hoveredNode !== this.state.hoveredNodeId()) this.state.hoveredNodeId.set(hoveredNode);
+    if (this.teleportMarker) {
+      this.teleportMarker.visible = !!groundHit;
+      if (groundHit) this.teleportMarker.position.copy(groundHit).add(new THREE.Vector3(0, 0.01, 0));
+    }
+
+    this.syncLabels();
+    this.updateHud();
+    ctx.engine.render();
   }
 
-  private attachVrSelectHandler(session: any) {
-    if (this.xrSelectHandler) return;
+  private handleGamepad(state: ControllerState, dt: number) {
+    const ctx = this.ctx;
+    const gamepad = state.input?.gamepad;
+    if (!ctx || !gamepad) return;
 
-    const raycaster = new THREE.Raycaster();
+    const axisX = gamepad.axes[2] ?? gamepad.axes[0] ?? 0;
+    const axisY = gamepad.axes[3] ?? gamepad.axes[1] ?? 0;
+    const handedness = state.input?.handedness ?? 'none';
 
-    this.xrSelectHandler = () => {
-      const renderer = this.xrRenderer ?? this.getRenderer();
-      if (!renderer) return;
-
-      const camObj: THREE.Camera | undefined =
-        resolveThreeObject<THREE.Camera>(this.cameraRef) ??
-        this.lastCamera ??
-        undefined;
-
-      if (!camObj) return;
-
-      const xrCam = renderer.xr?.getCamera?.(camObj) ?? camObj;
-      const origin = new THREE.Vector3();
-      const direction = new THREE.Vector3();
-
-      xrCam.getWorldPosition(origin);
-      xrCam.getWorldDirection(direction);
-      raycaster.set(origin, direction);
-
-      const objects = Array.from(this.nodeObjectMap.values());
-      const hits = raycaster.intersectObjects(objects, true);
-
-      if (!hits.length) return;
-
-      const hit = hits[0];
-      let hitObj: THREE.Object3D | null = hit.object;
-      let entry: [string, THREE.Object3D] | undefined;
-
-      while (hitObj && !entry) {
-        entry = Array.from(this.nodeObjectMap.entries()).find(([, obj]) => obj === hitObj);
-        hitObj = hitObj.parent ?? null;
+    if (handedness === 'right') {
+      // Snap turn around the user's head.
+      if (state.turnArmed && Math.abs(axisX) > 0.7) {
+        const angle = -Math.sign(axisX) * SNAP_TURN;
+        const head = this.headPosition();
+        const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+        ctx.world.position.sub(head).applyQuaternion(q).add(head);
+        ctx.world.quaternion.premultiply(q);
+        state.turnArmed = false;
+      } else if (Math.abs(axisX) < 0.3) {
+        state.turnArmed = true;
       }
+    } else if (Math.abs(axisX) > 0.15 || Math.abs(axisY) > 0.15) {
+      // Smooth locomotion: move the world opposite to the user's intended direction.
+      const xrCamera = ctx.renderer.xr.getCamera();
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(xrCamera.quaternion);
+      forward.y = 0;
+      forward.normalize();
+      const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+      const move = forward.multiplyScalar(-axisY).add(right.multiplyScalar(axisX));
+      ctx.world.position.addScaledVector(move, -MOVE_SPEED * dt);
+    }
 
-      if (!entry) return;
-
-      const [nodeId] = entry;
-      this.processState.selectNode(nodeId);
-      this.processState.statusMessage.set(`Selected Node ${nodeId}`);
-      this.onNodeSelected?.(nodeId);
-    };
-
-    session.addEventListener('select', this.xrSelectHandler);
+    // A/X (button 4) cycles the tool mode; B/Y (button 5) cycles the element type.
+    const pressed = gamepad.buttons.map(button => button.pressed);
+    if (pressed[4] && !state.prevButtons[4]) {
+      const next = MODES[(MODES.indexOf(this.state.interactionMode()) + 1) % MODES.length];
+      this.state.setMode(next);
+    }
+    if (pressed[5] && !state.prevButtons[5]) {
+      const next = PALETTE[(PALETTE.indexOf(this.state.currentNodeType()) + 1) % PALETTE.length];
+      if (this.state.interactionMode() !== 'add') this.state.setMode('add');
+      this.state.setNodeType(next);
+    }
+    state.prevButtons = pressed;
   }
 
-  private detachVrSelectHandler(session: any) {
-    if (!this.xrSelectHandler) return;
-    session.removeEventListener('select', this.xrSelectHandler);
-    this.xrSelectHandler = undefined;
+  // ── VR labels (CSS labels are not rendered inside an XR session) ──
+
+  private syncLabels() {
+    const group = this.labelGroup;
+    if (!group) return;
+    const nodes = this.state.allNodes();
+    const selected = new Set(this.state.selectedNodeIds());
+    const hovered = this.state.hoveredNodeId();
+    const live = new Set<string>();
+    nodes.forEach(node => {
+      live.add(node.id);
+      const state = selected.has(node.id) ? 'selected' : hovered === node.id ? 'hover' : 'idle';
+      const key = `${node.name}|${node.type}|${state}`;
+      let entry = this.labels.get(node.id);
+      if (!entry) {
+        const texture = new THREE.CanvasTexture(document.createElement('canvas'));
+        texture.colorSpace = THREE.SRGBColorSpace;
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
+        sprite.renderOrder = 20;
+        group.add(sprite);
+        entry = { sprite, texture, key: '' };
+        this.labels.set(node.id, entry);
+      }
+      if (entry.key !== key) {
+        this.drawLabel(entry.texture, node, state);
+        entry.key = key;
+      }
+      const { halfH } = nodeHalfExtents(node.type, node.bounds);
+      entry.sprite.position.set(node.position.x, node.position.y + halfH + 0.7, node.position.z);
+      entry.sprite.scale.set(2.8, 0.7, 1);
+    });
+    this.labels.forEach((entry, id) => {
+      if (live.has(id)) return;
+      entry.sprite.removeFromParent();
+      entry.texture.dispose();
+      entry.sprite.material.dispose();
+      this.labels.delete(id);
+    });
+  }
+
+  private drawLabel(texture: THREE.CanvasTexture, node: Node, state: 'idle' | 'hover' | 'selected') {
+    const canvas = texture.image as HTMLCanvasElement;
+    canvas.width = 512;
+    canvas.height = 128;
+    const g = canvas.getContext('2d')!;
+    const accent = NODE_TYPE_META[node.type].accent;
+    g.clearRect(0, 0, 512, 128);
+    g.fillStyle = state === 'selected' ? 'rgba(0, 60, 70, 0.92)' : 'rgba(6, 14, 20, 0.82)';
+    g.strokeStyle = state === 'idle' ? `${accent}88` : accent;
+    g.lineWidth = state === 'idle' ? 3 : 6;
+    g.beginPath();
+    g.roundRect(6, 6, 500, 116, 18);
+    g.fill();
+    g.stroke();
+    g.textAlign = 'center';
+    g.fillStyle = '#e6fbff';
+    g.font = '600 40px system-ui, sans-serif';
+    g.fillText(this.truncate(g, node.name, 470), 256, 62);
+    g.fillStyle = accent;
+    g.font = '24px system-ui, sans-serif';
+    g.fillText(NODE_TYPE_META[node.type].label.toUpperCase(), 256, 100);
+    texture.needsUpdate = true;
+  }
+
+  private truncate(g: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+    if (g.measureText(text).width <= maxWidth) return text;
+    let result = text;
+    while (result.length > 1 && g.measureText(`${result}…`).width > maxWidth) result = result.slice(0, -1);
+    return `${result}…`;
+  }
+
+  private disposeLabels() {
+    this.labels.forEach(entry => {
+      entry.sprite.removeFromParent();
+      entry.texture.dispose();
+      entry.sprite.material.dispose();
+    });
+    this.labels.clear();
+    this.labelGroup?.removeFromParent();
+    this.labelGroup = null;
+  }
+
+  // ── Wrist HUD showing the current tool ──
+
+  private createHud() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 192;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.2, 0.075),
+      new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthTest: false })
+    );
+    mesh.renderOrder = 1000;
+    mesh.position.set(0, 0.07, 0.02);
+    mesh.rotation.x = -Math.PI / 4;
+    this.hud = { mesh, texture, key: '' };
+  }
+
+  private updateHud() {
+    const hud = this.hud;
+    if (!hud) return;
+    // Attach to the left controller's grip when known, otherwise the first one.
+    const owner = this.controllers.find(c => c.input?.handedness === 'left') ?? this.controllers.find(c => c.input);
+    if (owner && hud.mesh.parent !== owner.grip) owner.grip.add(hud.mesh);
+
+    const mode = this.state.interactionMode();
+    const detail = mode === 'add'
+      ? NODE_TYPE_META[this.state.currentNodeType()].label
+      : this.state.selectedNode()?.name ?? 'A/X mode · B/Y type';
+    const key = `${mode}|${detail}`;
+    if (key === hud.key) return;
+    hud.key = key;
+
+    const canvas = hud.texture.image as HTMLCanvasElement;
+    const g = canvas.getContext('2d')!;
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    g.fillStyle = 'rgba(4, 12, 18, 0.88)';
+    g.strokeStyle = mode === 'delete' ? '#ff4b6e' : '#00f2ff';
+    g.lineWidth = 6;
+    g.beginPath();
+    g.roundRect(6, 6, 500, 180, 22);
+    g.fill();
+    g.stroke();
+    g.textAlign = 'center';
+    g.fillStyle = mode === 'delete' ? '#ff4b6e' : '#00f2ff';
+    g.font = '700 64px system-ui, sans-serif';
+    g.fillText(mode.toUpperCase(), 256, 86);
+    g.fillStyle = '#e6fbff';
+    g.font = '34px system-ui, sans-serif';
+    g.fillText(this.truncate(g, detail, 470), 256, 148);
+    hud.texture.needsUpdate = true;
+  }
+
+  private disposeHud() {
+    if (!this.hud) return;
+    this.hud.mesh.removeFromParent();
+    this.hud.mesh.geometry.dispose();
+    (this.hud.mesh.material as THREE.Material).dispose();
+    this.hud.texture.dispose();
+    this.hud = null;
   }
 }

@@ -38,8 +38,7 @@ describe('ProcessStateService', () => {
     });
 
     it('should not be dirty on init', () => {
-      // Constructor sets isDirty during initializeDefaultNodes, check state
-      expect(service.isDirty()).toBeTrue(); // init adds nodes which sets dirty
+      expect(service.isDirty()).toBeFalse();
     });
   });
 
@@ -199,7 +198,7 @@ describe('ProcessStateService', () => {
       const initialConns = service.allConnections().length;
       service.addConnection(otherNode.id, startNode.id);
       expect(service.allConnections().length).toBe(initialConns);
-      expect(service.statusMessage()).toContain('Start node cannot have incoming');
+      expect(service.statusMessage()).toContain('Start events cannot have incoming');
     });
 
     it('should reject incoming connections to messageStart events', () => {
@@ -220,7 +219,7 @@ describe('ProcessStateService', () => {
       const initialConns = service.allConnections().length;
       service.addConnection(terminal.id, otherNode.id);
       expect(service.allConnections().length).toBe(initialConns);
-      expect(service.statusMessage()).toContain('Terminal node cannot have outgoing');
+      expect(service.statusMessage()).toContain('End events cannot have outgoing');
     });
 
     it('should report error for non-existent source', () => {
@@ -1067,6 +1066,130 @@ describe('ProcessStateService', () => {
         expect(imported).toBeTruthy();
         expect(imported!.type).toBe(type);
       });
+    });
+  });
+
+  // ── History ──
+
+  describe('undo / redo', () => {
+    it('should undo and redo an added node', () => {
+      const count = service.allNodes().length;
+      service.addNode(new THREE.Vector3(3, 0, 3));
+      expect(service.canUndo()).toBeTrue();
+      service.undo();
+      expect(service.allNodes().length).toBe(count);
+      expect(service.canRedo()).toBeTrue();
+      service.redo();
+      expect(service.allNodes().length).toBe(count + 1);
+    });
+
+    it('should clear the redo stack after a new edit', () => {
+      service.addNode(new THREE.Vector3(3, 0, 3));
+      service.undo();
+      service.addNode(new THREE.Vector3(4, 0, 4));
+      expect(service.canRedo()).toBeFalse();
+    });
+
+    it('should not record history when a rename is a no-op', () => {
+      const node = service.allNodes()[0];
+      service.updateNodeName(node.id, node.name);
+      expect(service.canUndo()).toBeFalse();
+    });
+  });
+
+  // ── Structure ──
+
+  describe('boundary events and containment', () => {
+    const byName = (name: string) => service.allNodes().find(n => n.name === name)!;
+
+    it('should attach a boundary event to a task', () => {
+      const host = byName('Fulfil request');
+      const id = service.attachBoundary(host.id)!;
+      const boundary = service.nodeById().get(id)!;
+      expect(boundary.type).toBe('boundary');
+      expect(boundary.attachedTo).toBe(host.id);
+    });
+
+    it('should refuse to attach a boundary event to a gateway', () => {
+      expect(service.attachBoundary(byName('Approved?').id)).toBeNull();
+    });
+
+    it('should delete attached boundary events together with their host', () => {
+      const host = byName('Fulfil request');
+      const id = service.attachBoundary(host.id)!;
+      service.deleteNode(host.id);
+      expect(service.nodeById().has(id)).toBeFalse();
+    });
+
+    it('should delete subprocess children in cascade', () => {
+      service.setNodeType('subprocess');
+      const sub = service.addNode(new THREE.Vector3(0, 0, 20), null);
+      service.setNodeType('usertask');
+      const child = service.addNode(new THREE.Vector3(0, 0, 20), sub);
+      expect(service.nodeById().get(child)!.parentId).toBe(sub);
+      expect(service.descendantIds(sub).has(child)).toBeTrue();
+      service.deleteNode(sub);
+      expect(service.nodeById().has(child)).toBeFalse();
+    });
+
+    it('should reject flows that cross a subprocess boundary', () => {
+      service.setNodeType('subprocess');
+      const sub = service.addNode(new THREE.Vector3(0, 0, 20), null);
+      service.setNodeType('usertask');
+      const child = service.addNode(new THREE.Vector3(0, 0, 20), sub);
+      const count = service.allConnections().length;
+      service.addConnection(byName('Review request').id, child);
+      expect(service.allConnections().length).toBe(count);
+      expect(service.statusMessage()).toContain('cannot cross a subprocess boundary');
+    });
+  });
+
+  // ── Validation ──
+
+  describe('validation', () => {
+    it('should report no issues for the default diagram', () => {
+      expect(service.validationIssues()).toEqual([]);
+    });
+
+    it('should flag a disconnected task', () => {
+      const id = service.addNode(new THREE.Vector3(10, 0, 10), null);
+      const issues = service.validationIssues().filter(issue => issue.nodeId === id);
+      expect(issues.length).toBe(2);
+    });
+
+    it('should flag a missing start event', () => {
+      service.allNodes().filter(n => n.type === 'start').forEach(n => service.deleteNode(n.id));
+      expect(service.validationIssues().some(issue => issue.message.includes('no start event'))).toBeTrue();
+    });
+  });
+
+  // ── BPMN export details ──
+
+  describe('BPMN export', () => {
+    it('should export flow names and conditions', () => {
+      const flow = service.allConnections()[0];
+      service.updateConnection(flow.id, { name: 'Go', condition: '${ok}' });
+      const xml = service.exportBpmnXml();
+      expect(xml).toContain('name="Go"');
+      expect(xml).toContain('<bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${ok}</bpmn:conditionExpression>');
+    });
+
+    it('should export a DI shape for every element and an edge for every flow', () => {
+      const xml = service.exportBpmnXml();
+      const shapes = (xml.match(/<bpmndi:BPMNShape /g) ?? []).length;
+      const edges = (xml.match(/<bpmndi:BPMNEdge /g) ?? []).length;
+      expect(shapes).toBe(service.allNodes().length);
+      expect(edges).toBe(service.allConnections().length);
+    });
+
+    it('should round-trip a boundary event through BPMN XML', () => {
+      const host = service.allNodes().find(n => n.type === 'servicetask')!;
+      service.attachBoundary(host.id);
+      const xml = service.exportBpmnXml();
+      expect(xml).toContain(`attachedToRef="${host.id}"`);
+      expect(service.importBpmnXml(xml)).toBeTrue();
+      const boundary = service.allNodes().find(n => n.type === 'boundary')!;
+      expect(boundary.attachedTo).toBe(host.id);
     });
   });
 

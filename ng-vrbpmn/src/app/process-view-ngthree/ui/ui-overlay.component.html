@@ -1,0 +1,388 @@
+<!-- ── Top bar ── -->
+<header class="topbar panel">
+  <div class="brand">
+    <span class="brand__mark" aria-hidden="true"></span>
+    <span class="brand__name">VRBPMN</span>
+  </div>
+  <div class="doc">
+    <input class="doc__name" aria-label="Process name" [value]="state.processName()"
+      (change)="onProcessNameChange($event)" (keydown.enter)="$any($event.target).blur()" spellcheck="false" />
+    <span class="doc__status" [class.is-dirty]="state.isDirty()">
+      @if (state.isDirty()) {
+        Unsaved changes
+      } @else if (state.lastSavedAt()) {
+        Saved {{ formatTime(state.lastSavedAt()!) }}
+      } @else {
+        Autosaved locally
+      }
+    </span>
+  </div>
+
+  <div class="topbar__actions">
+    <div class="btn-group">
+      <button class="btn" type="button" title="New diagram" (click)="newDiagram()">
+        <app-icon name="new" /><span class="btn__label">New</span>
+      </button>
+      <button class="btn" type="button" title="Open .bpmn or .json (Ctrl+O)" (click)="openFile()">
+        <app-icon name="open" /><span class="btn__label">Open</span>
+      </button>
+      <div class="samples">
+        <button class="btn" type="button" title="Load a sample diagram" [class.is-active]="isSamplesOpen()"
+          (click)="isSamplesOpen.set(!isSamplesOpen())" aria-haspopup="menu" [attr.aria-expanded]="isSamplesOpen()">
+          <app-icon name="samples" /><span class="btn__label">Samples</span><app-icon name="chevron" class="btn__chevron" />
+        </button>
+        @if (isSamplesOpen()) {
+          <div class="menu panel" role="menu">
+            @for (sample of samples; track sample.file) {
+              <button class="menu__item" role="menuitem" type="button" (click)="loadSample(sample.file)">
+                <app-icon name="samples" /> {{ sample.label }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+      <button class="btn" type="button" title="Save editor file (Ctrl+S)" (click)="saveDiagram()">
+        <app-icon name="save" /><span class="btn__label">Save</span>
+      </button>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn btn--icon" type="button" title="Undo (Ctrl+Z)" [disabled]="!state.canUndo()" (click)="state.undo()">
+        <app-icon name="undo" />
+      </button>
+      <button class="btn btn--icon" type="button" title="Redo (Ctrl+Shift+Z)" [disabled]="!state.canRedo()" (click)="state.redo()">
+        <app-icon name="redo" />
+      </button>
+    </div>
+
+    <button class="btn btn--primary" type="button" title="Export BPMN 2.0 XML with diagram layout" (click)="exportBpmn()">
+      <app-icon name="export" /><span class="btn__label">Export BPMN</span>
+    </button>
+
+    <div class="btn-group">
+      <button class="btn btn--icon" type="button" title="Keyboard shortcuts (?)" (click)="isHelpVisible.set(true)">
+        <app-icon name="help" />
+      </button>
+      <button class="btn btn--icon" type="button" title="Toggle inspector (I)" [class.is-active]="isInspectorVisible()"
+        (click)="isInspectorVisible.set(!isInspectorVisible())">
+        <app-icon name="panel" />
+      </button>
+    </div>
+  </div>
+  <input #fileInput class="hidden-file-input" type="file"
+    accept=".json,.bpmn,.xml,application/json,application/xml,text/xml" (change)="onFileSelected($event)" />
+</header>
+
+<!-- ── Tool rail ── -->
+<nav class="toolrail panel" aria-label="Tools">
+  @for (tool of tools; track tool.mode) {
+    <button class="tool" type="button" [class.is-active]="state.interactionMode() === tool.mode"
+      [class.tool--danger]="tool.mode === 'delete'" [attr.aria-pressed]="state.interactionMode() === tool.mode"
+      [title]="tool.label + ' (' + tool.key + ')'" (click)="state.setMode(tool.mode)">
+      <app-icon [name]="tool.mode" />
+      <span class="tool__key">{{ tool.key }}</span>
+    </button>
+  }
+  <span class="toolrail__divider"></span>
+  <button class="tool" type="button" [class.is-active]="state.snapToGrid()" [attr.aria-pressed]="state.snapToGrid()"
+    title="Snap to grid (S)" (click)="state.toggleSnap()">
+    <app-icon name="snap" />
+    <span class="tool__key">S</span>
+  </button>
+  <button class="tool" type="button" title="Frame diagram (F)" (click)="state.requestFrame()">
+    <app-icon name="frame" />
+    <span class="tool__key">F</span>
+  </button>
+  <span class="toolrail__divider"></span>
+  <button class="tool tool--vr" type="button" [class.is-active]="vr.xrActive()"
+    [disabled]="vr.xrSupported() === false"
+    [title]="vr.xrSupported() === false ? 'WebXR is not available in this browser' : (vr.xrActive() ? 'Exit VR' : 'Enter VR')"
+    (click)="vr.toggleVr()">
+    <app-icon name="vr" />
+    <span class="tool__key">VR</span>
+  </button>
+</nav>
+
+<!-- ── Element palette (add mode) ── -->
+@if (state.interactionMode() === 'add') {
+  <div class="palette panel" [class.palette--beside-inspector]="isInspectorVisible()" role="toolbar" aria-label="Elements">
+    @for (group of paletteGroups; track group.label) {
+      <div class="palette__group">
+        <span class="palette__title">{{ group.label }}</span>
+        <div class="palette__items">
+          @for (type of group.types; track type) {
+            <button class="palette__item" type="button" [class.is-active]="state.currentNodeType() === type"
+              [style.--accent]="META[type].accent" [title]="META[type].label + ' — ' + META[type].hint + ' (' + META[type].shortcut + ')'"
+              (click)="state.setNodeType(type)">
+              <app-icon [name]="type" />
+              <span class="palette__label">{{ META[type].label }}</span>
+              <span class="palette__key">{{ META[type].shortcut }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- ── Status bar ── -->
+<footer class="statusbar panel">
+  <span class="statusbar__mode" [class.is-danger]="state.interactionMode() === 'delete'">{{ state.interactionMode() }}</span>
+  <span class="statusbar__text">
+    <span class="statusbar__message">{{ state.statusMessage() }}</span>
+    <span class="statusbar__hint">{{ modeHint() }}</span>
+  </span>
+  <button class="statusbar__issues" type="button" (click)="showProcess()"
+    [class.has-errors]="errorCount() > 0" [class.has-warnings]="issues().length > 0 && errorCount() === 0"
+    title="Show validation results">
+    @if (issues().length === 0) {
+      <app-icon name="check" /> Valid
+    } @else {
+      <app-icon name="alert" /> {{ issues().length }} issue{{ issues().length === 1 ? '' : 's' }}
+    }
+  </button>
+</footer>
+
+<!-- ── Inspector ── -->
+<aside class="inspector panel" [class.is-hidden]="!isInspectorVisible()" aria-label="Inspector">
+  @if (selectedNode(); as current) {
+    @for (node of [current]; track node.id) {
+      <div class="inspector__head" [style.--accent]="META[node.type].accent">
+        <app-icon [name]="node.type" class="inspector__glyph" />
+        <div>
+          <div class="inspector__kicker">{{ META[node.type].label }}</div>
+          <div class="inspector__title">{{ node.name }}</div>
+        </div>
+      </div>
+      <div class="inspector__body">
+        @if (multiSelectionCount() > 1) {
+          <div class="note">
+            {{ multiSelectionCount() }} elements selected. Drag any of them to move the group.
+            <button class="btn btn--danger btn--small" type="button" (click)="state.deleteSelected()">
+              <app-icon name="delete" /> Delete {{ multiSelectionCount() }}
+            </button>
+          </div>
+        }
+        <label class="field">
+          <span class="field__label">Name</span>
+          <input class="field__input" [value]="node.name" (change)="onNameChange(node.id, $event)"
+            (keydown.enter)="$any($event.target).blur()" />
+        </label>
+        <label class="field">
+          <span class="field__label">ID</span>
+          <input class="field__input field__input--mono" [value]="node.id" (change)="onIdChange(node.id, $event)"
+            (keydown.enter)="$any($event.target).blur()" spellcheck="false" />
+        </label>
+
+        @if (node.type === 'boundary') {
+          <label class="field">
+            <span class="field__label">Trigger</span>
+            <select class="field__input" [value]="node.boundaryKind || 'timer'" (change)="onBoundaryKindChange(node.id, $event)">
+              <option value="timer">Timer</option>
+              <option value="message">Message</option>
+              <option value="error">Error</option>
+              <option value="escalation">Escalation</option>
+            </select>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" [checked]="node.cancelActivity !== false" (change)="onInterruptingChange(node.id, $event)" />
+            <span>Interrupting (cancels {{ nodeName(node.attachedTo) }})</span>
+          </label>
+          <div class="meta-row"><span>Attached to</span><strong>{{ nodeName(node.attachedTo) }}</strong></div>
+        }
+
+        @if (supportsMultiInstance(node.type)) {
+          <label class="field">
+            <span class="field__label">Multi-instance</span>
+            <select class="field__input" [value]="node.multiInstance || 'none'" (change)="onMultiInstanceChange(node.id, $event)">
+              <option value="none">None</option>
+              <option value="parallel">Parallel</option>
+              <option value="sequential">Sequential</option>
+            </select>
+          </label>
+        }
+
+        <label class="field">
+          <span class="field__label">Description</span>
+          <textarea class="field__input field__textarea" rows="4" [value]="node.description || ''"
+            placeholder="Exported as BPMN documentation" (change)="onDescriptionChange(node.id, $event)"></textarea>
+        </label>
+
+        <div class="meta">
+          <div class="meta-row"><span>Flows</span><strong>{{ nodeFlows().incoming }} in · {{ nodeFlows().outgoing }} out</strong></div>
+          @if (node.type === 'subprocess') {
+            <div class="meta-row"><span>Contains</span><strong>{{ childCount() }} element{{ childCount() === 1 ? '' : 's' }}</strong></div>
+            <div class="meta-row"><span>Size</span><strong>{{ node.bounds?.width | number: '1.1-1' }} × {{ node.bounds?.height | number: '1.1-1' }}</strong></div>
+          }
+          @if (node.parentId && node.type !== 'boundary') {
+            <div class="meta-row"><span>Inside</span><strong>{{ nodeName(node.parentId) }}</strong></div>
+          }
+          <div class="meta-row"><span>Position</span><strong>{{ node.position.x | number: '1.1-1' }}, {{ node.position.z | number: '1.1-1' }}</strong></div>
+        </div>
+
+        @if (selectedNodeIssues().length) {
+          <ul class="issues">
+            @for (issue of selectedNodeIssues(); track issue.message) {
+              <li class="issue" [class.is-error]="issue.severity === 'error'"><app-icon name="alert" /> {{ issue.message }}</li>
+            }
+          </ul>
+        }
+
+        @if (canHostBoundary(node)) {
+          <button class="btn btn--block" type="button" (click)="state.attachBoundary(node.id)">
+            <app-icon name="boundary" /> Attach boundary event
+          </button>
+        }
+        @if (state.interactionMode() !== 'link' && node.type !== 'terminal') {
+          <button class="btn btn--block" type="button" (click)="state.setMode('link')">
+            <app-icon name="link" /> Connect from here
+          </button>
+        }
+      </div>
+      <div class="inspector__foot">
+        <button class="btn btn--danger btn--block" type="button" (click)="state.deleteNode(node.id)">
+          <app-icon name="delete" /> Delete {{ META[node.type].label.toLowerCase() }}
+        </button>
+      </div>
+    }
+  } @else if (selectedConnection(); as current) {
+    @for (conn of [current]; track conn.id) {
+      <div class="inspector__head">
+        <app-icon name="link" class="inspector__glyph" />
+        <div>
+          <div class="inspector__kicker">Sequence flow</div>
+          <div class="inspector__title">{{ nodeName(conn.sourceId) }} → {{ nodeName(conn.targetId) }}</div>
+        </div>
+      </div>
+      <div class="inspector__body">
+        <label class="field">
+          <span class="field__label">Label</span>
+          <input class="field__input" [value]="conn.name || ''" placeholder="e.g. Yes" (change)="onFlowNameChange(conn.id, $event)"
+            (keydown.enter)="$any($event.target).blur()" />
+        </label>
+        <label class="field">
+          <span class="field__label">Condition expression</span>
+          <input class="field__input field__input--mono" [value]="conn.condition || ''" placeholder="${approved == true}"
+            (change)="onFlowConditionChange(conn.id, $event)" (keydown.enter)="$any($event.target).blur()" spellcheck="false" />
+        </label>
+        <div class="meta">
+          <div class="meta-row"><span>ID</span><strong class="mono">{{ conn.id }}</strong></div>
+          <div class="meta-row"><span>Routing</span><strong>{{ conn.waypoints?.length ? 'From imported layout' : 'Automatic' }}</strong></div>
+        </div>
+        @if (conn.waypoints?.length) {
+          <button class="btn btn--block" type="button" (click)="resetRoute(conn.id)">
+            <app-icon name="reroute" /> Route automatically
+          </button>
+        }
+      </div>
+      <div class="inspector__foot">
+        <button class="btn btn--danger btn--block" type="button" (click)="state.deleteConnection(conn.id)">
+          <app-icon name="delete" /> Delete flow
+        </button>
+      </div>
+    }
+  } @else {
+    <div class="inspector__head">
+      <app-icon name="samples" class="inspector__glyph" />
+      <div>
+        <div class="inspector__kicker">Process</div>
+        <div class="inspector__title">{{ state.processName() }}</div>
+      </div>
+    </div>
+    <div class="inspector__body">
+      <label class="field">
+        <span class="field__label">Process name</span>
+        <input class="field__input" [value]="state.processName()" (change)="onProcessNameChange($event)"
+          (keydown.enter)="$any($event.target).blur()" />
+      </label>
+      <label class="field">
+        <span class="field__label">Process ID</span>
+        <input class="field__input field__input--mono" [value]="state.processId()" (change)="onProcessIdChange($event)"
+          (keydown.enter)="$any($event.target).blur()" spellcheck="false" />
+      </label>
+      <div class="meta">
+        <div class="meta-row"><span>Elements</span><strong>{{ state.allNodes().length }}</strong></div>
+        <div class="meta-row"><span>Sequence flows</span><strong>{{ state.allConnections().length }}</strong></div>
+      </div>
+
+      <div class="section-title">
+        Validation
+        @if (issues().length === 0) { <span class="pill pill--ok">All good</span> }
+        @else { <span class="pill" [class.pill--error]="errorCount() > 0">{{ issues().length }}</span> }
+      </div>
+      @if (issues().length === 0) {
+        <p class="muted">No problems found. The diagram is ready to export.</p>
+      } @else {
+        <ul class="issues">
+          @for (issue of issues(); track $index) {
+            <li class="issue" [class.is-error]="issue.severity === 'error'" [class.is-clickable]="issue.nodeId || issue.connectionId"
+              (click)="focusIssue(issue)">
+              <app-icon name="alert" /> {{ issue.message }}
+            </li>
+          }
+        </ul>
+      }
+      <p class="muted small">Select an element to edit it. Exports open in Camunda Modeler with the layout preserved.</p>
+    </div>
+  }
+</aside>
+
+<!-- ── Help ── -->
+@if (isHelpVisible()) {
+  <div class="modal-backdrop" (click)="isHelpVisible.set(false)">
+    <div class="modal panel" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" (click)="$event.stopPropagation()">
+      <div class="modal__head">
+        <h2>Shortcuts &amp; controls</h2>
+        <button class="btn btn--icon" type="button" title="Close (Esc)" (click)="isHelpVisible.set(false)"><app-icon name="close" /></button>
+      </div>
+      <div class="modal__grid">
+        <section>
+          <h3>Tools</h3>
+          <dl class="keys">
+            <dt><kbd>M</kbd></dt><dd>Select / move</dd>
+            <dt><kbd>A</kbd></dt><dd>Add element</dd>
+            <dt><kbd>L</kbd></dt><dd>Connect elements</dd>
+            <dt><kbd>D</kbd></dt><dd>Delete tool</dd>
+            <dt><kbd>1</kbd>–<kbd>9</kbd> <kbd>0</kbd> <kbd>B</kbd></dt><dd>Pick element type</dd>
+            <dt><kbd>S</kbd></dt><dd>Toggle snap to grid</dd>
+            <dt><kbd>F</kbd></dt><dd>Frame the diagram</dd>
+            <dt><kbd>I</kbd></dt><dd>Toggle inspector</dd>
+          </dl>
+        </section>
+        <section>
+          <h3>Editing</h3>
+          <dl class="keys">
+            <dt><kbd>Ctrl</kbd> <kbd>Z</kbd></dt><dd>Undo</dd>
+            <dt><kbd>Ctrl</kbd> <kbd>⇧</kbd> <kbd>Z</kbd></dt><dd>Redo</dd>
+            <dt><kbd>Ctrl</kbd> <kbd>A</kbd></dt><dd>Select all</dd>
+            <dt><kbd>Del</kbd></dt><dd>Delete selection</dd>
+            <dt><kbd>Esc</kbd></dt><dd>Cancel / clear selection</dd>
+            <dt><kbd>Ctrl</kbd> <kbd>S</kbd></dt><dd>Save editor file</dd>
+            <dt><kbd>Ctrl</kbd> <kbd>O</kbd></dt><dd>Open file</dd>
+          </dl>
+        </section>
+        <section>
+          <h3>Mouse</h3>
+          <dl class="keys">
+            <dt>Left drag</dt><dd>Orbit (or move an element)</dd>
+            <dt>Right drag</dt><dd>Pan</dd>
+            <dt>Wheel</dt><dd>Zoom</dd>
+            <dt><kbd>⇧</kbd> click</dt><dd>Add to selection</dd>
+            <dt>Drop on subprocess</dt><dd>Move element inside</dd>
+          </dl>
+        </section>
+        <section>
+          <h3>VR controllers</h3>
+          <dl class="keys">
+            <dt>Trigger</dt><dd>Select, drag, place, link</dd>
+            <dt>Squeeze</dt><dd>Teleport to pointed floor</dd>
+            <dt>Left stick</dt><dd>Walk</dd>
+            <dt>Right stick</dt><dd>Snap turn</dd>
+            <dt>A / X</dt><dd>Next tool</dd>
+            <dt>B / Y</dt><dd>Next element type</dd>
+          </dl>
+        </section>
+      </div>
+    </div>
+  </div>
+}
